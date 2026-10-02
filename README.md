@@ -2,7 +2,7 @@
 
 Employee Q&A for fictional **Harborline Technologies**. The repo holds a 2026 policy corpus, HarborHub-style employee records, and a seeded retrieval app that answers questions about PTO, holidays, remote work, expenses, security, benefits, onboarding, equipment, leave, and conduct.
 
-Default answer mode is **retrieve-only**: retrieval quotes the corpus instead of asking a chat model to write the answer. The default retrieval backend calls OpenAI `text-embedding-3-small` and ranks those vectors in process, so `OPENAI_API_KEY` is required unless you set `HARBORLINE_RETRIEVE_BACKEND=tfidf`. Set `HARBORLINE_ANSWER_MODE=llm` when you also want a model to write the answer. Tickets and emails are session-only mocks; nothing is written to HarborHub or to `data/tickets.json`.
+Answer mode is `HARBORLINE_ANSWER_MODE=llm`. With `OPENAI_API_KEY` set, the chat model writes the answer from retrieved snippets. Retrieval calls OpenAI `text-embedding-3-small` and ranks those vectors in process, so that key is required unless you set `HARBORLINE_RETRIEVE_BACKEND=tfidf`. `HARBORLINE_ANSWER_MODE=retrieve` keeps extractive quotes. Tickets and emails are session-only mocks; nothing is written to HarborHub or to `data/tickets.json`.
 
 Deeper references:
 
@@ -110,7 +110,7 @@ cp .env.example .env
 | `OPENAI_API_KEY` | For OpenAI retrieval and LLM answers | empty | Embeddings and optional chat |
 | `OPENAI_MODEL` | No | `gpt-4o-mini` | Chat model |
 | `OPENAI_BASE_URL` | No | OpenAI | Azure or another compatible gateway |
-| `HARBORLINE_ANSWER_MODE` | No | `retrieve` | `retrieve` or `llm` |
+| `HARBORLINE_ANSWER_MODE` | No | `llm` | `llm` writes the answer; `retrieve` quotes the corpus |
 | `HARBORLINE_SEED` | No | `42` | Eval sampling and LLM seed |
 | `HARBORLINE_CHUNK_SIZE` | No | `900` | Deterministic window |
 | `HARBORLINE_CHUNK_OVERLAP` | No | `120` | Overlap between windows |
@@ -146,7 +146,7 @@ Optional filters: `--kind policy`, `--kind structured`, `--source-format md`.
 
 Skipping ingest makes the first `ask` embed the corpus on the fly and write the cache. Set `HARBORLINE_RETRIEVE_BACKEND=tfidf` to skip embeddings entirely (this is what pytest and CI use).
 
-**LLM answers** keep the same retrieval, rewrite, rerank, citations, and guardrails. Put `OPENAI_API_KEY` in `.env` and leave `HARBORLINE_ANSWER_MODE` unset (or set it to `llm`). Temperature is `0` and `seed` is `42`. The model writes the answer from the retrieved snippets. Set `OPENAI_BASE_URL` for Azure or another gateway. `/health` reports `has_openai_key` and `llm_answers`.
+**LLM answers** keep the same retrieval, rewrite, rerank, citations, and guardrails. Put `OPENAI_API_KEY` in `.env` and set `HARBORLINE_ANSWER_MODE=llm`. Temperature is `0` and `seed` is `42`. The model writes the answer from the retrieved snippets. Set `OPENAI_BASE_URL` for Azure or another gateway. `/health` reports `answer_mode` of `llm`, `has_openai_key`, and `llm_answers` true.
 
 ## Agent
 
@@ -265,15 +265,14 @@ Two policy-QA tasks in that snapshot (`t-pto-tenure`, `t-pto-carryover`) are mar
 
 ## Deployment
 
-The image serves FastAPI. Pass secrets at runtime. Do not bake keys into the image. The image defaults to the OpenAI embedding backend and retrieve mode, and it copies `corpus/`, `data/`, and `eval/`. It does not download embedding weights. On Render, set `OPENAI_API_KEY`. The first search after a restart calls the embeddings API and holds the matrix in that process. `.cache/` is local to the container and does not survive a new deploy.
+The image serves FastAPI. Pass secrets at runtime. Do not bake keys into the image. The image defaults to the OpenAI embedding backend. Its Dockerfile sets `HARBORLINE_ANSWER_MODE=retrieve`, so the Render service variable must override that. Set `OPENAI_API_KEY` and `HARBORLINE_ANSWER_MODE=llm` on the service. The model then writes the answer. The image copies `corpus/`, `data/`, and `eval/`. It does not download embedding weights. The first search after a restart calls the embeddings API and holds the matrix in that process. `.cache/` is local to the container and does not survive a new deploy. `/health` should show `answer_mode` of `llm` and `llm_answers` true.
 
 ```bash
 docker build -t harborline-qa .
-docker run --rm -p 8000:8000 --env-file .env harborline-qa
-docker run --rm -p 8000:8000 -e HARBORLINE_ANSWER_MODE=retrieve harborline-qa
+docker run --rm -p 8000:8000 --env-file .env -e HARBORLINE_ANSWER_MODE=llm harborline-qa
 ```
 
-For Cloud Run, App Service, Fly.io, or Render, set `OPENAI_API_KEY` on the service, attach `corpus/`, `data/`, and `eval/`, and keep `HARBORLINE_SEED=42` when you want eval numbers that match local runs. Do not set `HARBORLINE_RETRIEVE_BACKEND=faiss` or `pinecone`; those backends have been removed.
+For Cloud Run, App Service, Fly.io, or Render, set `OPENAI_API_KEY` and `HARBORLINE_ANSWER_MODE=llm` on the service, attach `corpus/`, `data/`, and `eval/`, and keep `HARBORLINE_SEED=42` when you want eval numbers that match local runs. Do not set `HARBORLINE_RETRIEVE_BACKEND=faiss` or `pinecone`; those backends have been removed. CI still sets `HARBORLINE_ANSWER_MODE=retrieve` so tests stay extractive.
 
 ## CI
 
@@ -293,7 +292,7 @@ For Cloud Run, App Service, Fly.io, or Render, set `OPENAI_API_KEY` on the servi
 | `PYTHONHASHSEED` | set by `Settings.apply_seeds()` | Stable hashing in-process |
 | OpenAI embeddings | `text-embedding-3-small`, cosine over a cached matrix | Vectors come from the API; no local weight files |
 | TF-IDF | optional | Stable sort: score descending, `chunk_id` ascending |
-| LLM | temperature 0, seed 42 | When `OPENAI_API_KEY` is set and answer mode is not pinned to `retrieve` |
+| LLM | temperature 0, seed 42 | When `HARBORLINE_ANSWER_MODE=llm` and `OPENAI_API_KEY` is set |
 
 ## Layout
 
