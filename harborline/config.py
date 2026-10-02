@@ -15,8 +15,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 load_dotenv(ROOT / ".env")
 
-# pinecone: OpenAI embeddings + hosted index. tfidf: offline, no API keys.
-RETRIEVE_BACKENDS = ("pinecone", "tfidf")
+# openai: OpenAI embeddings API + in-process cosine index. tfidf: offline, no API keys.
+RETRIEVE_BACKENDS = ("openai", "tfidf")
 # Fixed. There is no HuggingFace or sentence-transformer embedding provider.
 EMBEDDING_PROVIDER = "openai"
 
@@ -79,11 +79,6 @@ class Settings:
     openai_api_key: str | None
     openai_model: str
     openai_base_url: str | None
-    pinecone_api_key: str | None
-    pinecone_index_host: str | None
-    pinecone_index_name: str | None
-    pinecone_namespace: str
-    pinecone_api_version: str
     root: Path
     corpus_dir: Path
     data_dir: Path
@@ -126,7 +121,7 @@ def get_settings() -> Settings:
         chunk_overlap=_int("HARBORLINE_CHUNK_OVERLAP", 120),
         top_k=_int("HARBORLINE_TOP_K", 5),
         answer_mode=resolve_answer_mode(),
-        retrieve_backend=_str("HARBORLINE_RETRIEVE_BACKEND", "pinecone").lower(),
+        retrieve_backend=_str("HARBORLINE_RETRIEVE_BACKEND", "openai").lower(),
         embedding_model=_str("HARBORLINE_EMBEDDING_MODEL", "text-embedding-3-small"),
         embedding_provider=EMBEDDING_PROVIDER,
         min_score=_float("HARBORLINE_MIN_SCORE", 0.22),
@@ -136,11 +131,6 @@ def get_settings() -> Settings:
         openai_api_key=key,
         openai_model=_str("OPENAI_MODEL", "gpt-4o-mini"),
         openai_base_url=os.getenv("OPENAI_BASE_URL") or None,
-        pinecone_api_key=(os.getenv("PINECONE_API_KEY") or "").strip() or None,
-        pinecone_index_host=(os.getenv("PINECONE_INDEX_HOST") or "").strip() or None,
-        pinecone_index_name=(os.getenv("PINECONE_INDEX_NAME") or "").strip() or None,
-        pinecone_namespace=_str("PINECONE_NAMESPACE", "harborline"),
-        pinecone_api_version=_str("PINECONE_API_VERSION", "2025-04"),
         root=ROOT,
         corpus_dir=ROOT / "corpus",
         data_dir=ROOT / "data",

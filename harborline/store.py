@@ -1,27 +1,26 @@
-"""OpenAI embeddings stored in a hosted Pinecone index.
+"""OpenAI cloud embeddings with an in-process cosine index.
 
-The process never downloads sentence-transformer weights and never keeps the
-corpus index resident. Ingest uploads vectors to Pinecone. Query time embeds
-one string and reads back the top matches.
+The process never downloads sentence-transformer weights. Ingest calls the
+OpenAI embeddings API and caches the vectors on disk. Query time embeds one
+string and ranks the cached matrix in memory.
 """
 
 from __future__ import annotations
 
 import json
-import urllib.error
-import urllib.parse
-import urllib.request
+from dataclasses import dataclass
+
+import numpy as np
 
 from harborline.config import Settings, get_settings
 from harborline.ingest import Chunk, load_chunks
 
 _EMBED_BATCH = 64
-_UPSERT_BATCH = 50
-_host_by_index: dict[str, str] = {}
+_indexes: dict[str, EmbeddingIndex] = {}
 
 
 class VectorStoreError(RuntimeError):
-    """Missing credentials or a failed call to OpenAI or Pinecone."""
+    """Missing credentials or a failed call to the OpenAI embeddings API."""
 
 
 def _meta_value(value: object) -> str | int | float | bool:
@@ -74,8 +73,8 @@ def metadata_to_chunk(meta: dict) -> Chunk:
 
 def vector_index_label(settings: Settings | None = None) -> str:
     settings = settings or get_settings()
-    if settings.retrieve_backend == "pinecone":
-        return f"hosted:pinecone/{settings.pinecone_namespace}"
+    if settings.retrieve_backend == "openai":
+        return f"openai:{settings.embedding_model}"
     if settings.retrieve_backend == "tfidf":
         return "local:tfidf"
     return settings.retrieve_backend
@@ -168,130 +167,108 @@ def embed_texts(texts: list[str], settings: Settings | None = None) -> list[list
     return build_embeddings(settings).embed_documents(texts)
 
 
-def _require_pinecone(settings: Settings) -> None:
-    if not (settings.pinecone_api_key or "").strip():
-        raise VectorStoreError(
-            "PINECONE_API_KEY is not set. The vector index is hosted in Pinecone "
-            "so this process does not keep it in memory. Set PINECONE_API_KEY and "
-            "PINECONE_INDEX_HOST (or PINECONE_INDEX_NAME), or use "
-            "HARBORLINE_RETRIEVE_BACKEND=tfidf."
-        )
-    if not (settings.pinecone_index_host or settings.pinecone_index_name):
-        raise VectorStoreError(
-            "Set PINECONE_INDEX_HOST or PINECONE_INDEX_NAME. Create a cosine index "
-            f"with dimension 1536 for {settings.embedding_model}."
-        )
+@dataclass
+class EmbeddingIndex:
+    """L2-normalized vectors for one embedding model, aligned with chunks."""
+
+    model: str
+    chunks: list[Chunk]
+    matrix: np.ndarray
 
 
-def _pinecone_json(settings: Settings, method: str, url: str, body: dict | None = None) -> dict:
-    payload = None if body is None else json.dumps(body).encode("utf-8")
-    req = urllib.request.Request(url, data=payload, method=method)
-    req.add_header("Accept", "application/json")
-    req.add_header("Api-Key", settings.pinecone_api_key or "")
-    req.add_header("X-Pinecone-API-Version", settings.pinecone_api_version)
-    if payload is not None:
-        req.add_header("Content-Type", "application/json")
-    try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            raw = resp.read().decode("utf-8")
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="replace")
-        raise VectorStoreError(
-            f"Pinecone {method} {url} failed ({exc.code}): {detail}"
-        ) from exc
-    except urllib.error.URLError as exc:
-        raise VectorStoreError(f"Pinecone {method} {url} failed: {exc.reason}") from exc
-    if not raw:
-        return {}
-    parsed = json.loads(raw)
-    return parsed if isinstance(parsed, dict) else {}
+def clear_index_cache() -> None:
+    """Drop the in-process matrix. The on-disk cache is left in place."""
+    _indexes.clear()
 
 
-def _normalize_host(raw: str | None) -> str:
-    host = (raw or "").strip()
-    if not host:
-        return ""
-    host = host.removeprefix("https://").removeprefix("http://").strip("/")
-    return host.split("/")[0]
+def _cache_key(settings: Settings) -> str:
+    return str(settings.cache_dir.resolve())
 
 
-def index_host(settings: Settings) -> str:
-    """Data-plane host. Resolves PINECONE_INDEX_NAME through the control plane once."""
-    explicit = _normalize_host(settings.pinecone_index_host)
-    if explicit:
-        return explicit
-    _require_pinecone(settings)
-    name = (settings.pinecone_index_name or "").strip()
-    cached = _host_by_index.get(name)
-    if cached:
+def _cache_paths(settings: Settings) -> tuple:
+    root = settings.cache_dir
+    return root / "openai_vectors.npz", root / "openai_chunks.json"
+
+
+def _normalize_rows(matrix: np.ndarray) -> np.ndarray:
+    norms = np.linalg.norm(matrix, axis=1, keepdims=True)
+    return matrix / np.maximum(norms, 1e-12)
+
+
+def _read_disk(settings: Settings) -> EmbeddingIndex | None:
+    npz_path, json_path = _cache_paths(settings)
+    if not npz_path.exists() or not json_path.exists():
+        return None
+    payload = json.loads(json_path.read_text(encoding="utf-8"))
+    model = str(payload.get("model") or "")
+    if model != settings.embedding_model:
+        return None
+    raw_chunks = payload.get("chunks") or []
+    chunks = [metadata_to_chunk(item) for item in raw_chunks]
+    with np.load(npz_path) as data:
+        matrix = np.asarray(data["vectors"], dtype=np.float32)
+    if matrix.ndim != 2 or matrix.shape[0] != len(chunks):
+        return None
+    return EmbeddingIndex(model=model, chunks=chunks, matrix=_normalize_rows(matrix))
+
+
+def load_index(settings: Settings | None = None) -> EmbeddingIndex | None:
+    """Return the cached OpenAI embedding index, or None when ingest has not run."""
+    settings = settings or get_settings()
+    key = _cache_key(settings)
+    cached = _indexes.get(key)
+    if cached is not None and cached.model == settings.embedding_model:
         return cached
-    described = _pinecone_json(
-        settings,
-        "GET",
-        f"https://api.pinecone.io/indexes/{urllib.parse.quote(name)}",
-    )
-    host = _normalize_host(str(described.get("host") or ""))
-    if not host:
-        raise VectorStoreError(f"Pinecone index {name!r} did not return a host.")
-    _host_by_index[name] = host
-    return host
-
-
-def _pinecone_metadata(chunk: Chunk) -> dict:
-    """Flat metadata. Empty strings are omitted; Pinecone stores the rest."""
-    meta = {}
-    for key, value in chunk_to_metadata(chunk).items():
-        if value == "":
-            continue
-        meta[key] = value
-    return meta
+    loaded = _read_disk(settings)
+    if loaded is not None:
+        _indexes[key] = loaded
+    return loaded
 
 
 def persist_chunks(chunks: list[Chunk] | None = None, settings: Settings | None = None) -> int:
-    """Replace the Pinecone namespace with embeddings of these chunks."""
+    """Embed chunks with the OpenAI API and replace the local cosine index."""
     settings = settings or get_settings()
     chunks = chunks if chunks is not None else load_chunks(settings)
     if not chunks:
         return 0
-    _require_pinecone(settings)
-    host = index_host(settings)
-    namespace = settings.pinecone_namespace
-    _pinecone_json(
-        settings,
-        "POST",
-        f"https://{host}/vectors/delete",
-        {"deleteAll": True, "namespace": namespace},
-    )
-    for start in range(0, len(chunks), _UPSERT_BATCH):
-        piece = chunks[start : start + _UPSERT_BATCH]
-        vectors = embed_texts([c.text for c in piece], settings)
-        if len(vectors) != len(piece):
+    vectors: list[list[float]] = []
+    for start in range(0, len(chunks), _EMBED_BATCH):
+        piece = chunks[start : start + _EMBED_BATCH]
+        batch = embed_texts([chunk.text for chunk in piece], settings)
+        if len(batch) != len(piece):
             raise VectorStoreError(
-                f"Expected {len(piece)} embeddings and received {len(vectors)}."
+                f"Expected {len(piece)} embeddings and received {len(batch)}."
             )
-        _pinecone_json(
-            settings,
-            "POST",
-            f"https://{host}/vectors/upsert",
-            {
-                "namespace": namespace,
-                "vectors": [
-                    {"id": chunk.chunk_id, "values": vector, "metadata": _pinecone_metadata(chunk)}
-                    for chunk, vector in zip(piece, vectors, strict=True)
-                ],
-            },
+        vectors.extend(batch)
+    matrix = np.asarray(vectors, dtype=np.float32)
+    if matrix.ndim != 2 or matrix.shape[0] != len(chunks):
+        raise VectorStoreError(
+            f"Expected a ({len(chunks)}, dim) embedding matrix and received shape {matrix.shape}."
         )
+    index = EmbeddingIndex(
+        model=settings.embedding_model,
+        chunks=list(chunks),
+        matrix=_normalize_rows(matrix),
+    )
+    npz_path, json_path = _cache_paths(settings)
+    npz_path.parent.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(npz_path, vectors=index.matrix)
+    json_path.write_text(
+        json.dumps(
+            {
+                "model": settings.embedding_model,
+                "chunks": [chunk_to_metadata(chunk) for chunk in chunks],
+            }
+        ),
+        encoding="utf-8",
+    )
+    _indexes[_cache_key(settings)] = index
     return len(chunks)
 
 
 def collection_count(settings: Settings | None = None) -> int:
-    settings = settings or get_settings()
-    _require_pinecone(settings)
-    host = index_host(settings)
-    payload = _pinecone_json(settings, "POST", f"https://{host}/describe_index_stats", {})
-    namespaces = payload.get("namespaces") or {}
-    info = namespaces.get(settings.pinecone_namespace) or {}
-    return int(info.get("vectorCount") or 0)
+    index = load_index(settings)
+    return 0 if index is None else len(index.chunks)
 
 
 def query_vectors(
@@ -299,26 +276,28 @@ def query_vectors(
     top_k: int,
     settings: Settings | None = None,
 ) -> list[tuple[float, dict]]:
-    """Return (score, metadata) pairs. Vector values are not copied back."""
+    """Return (cosine, metadata) pairs from the OpenAI embedding index."""
     settings = settings or get_settings()
-    _require_pinecone(settings)
-    host = index_host(settings)
-    payload = _pinecone_json(
-        settings,
-        "POST",
-        f"https://{host}/query",
-        {
-            "namespace": settings.pinecone_namespace,
-            "vector": vector,
-            "topK": top_k,
-            "includeMetadata": True,
-            "includeValues": False,
-        },
-    )
+    index = load_index(settings)
+    if index is None or not index.chunks or top_k <= 0:
+        return []
+    query = np.asarray(vector, dtype=np.float32).reshape(-1)
+    width = int(index.matrix.shape[1])
+    if query.shape != (width,):
+        raise VectorStoreError(
+            f"Query embedding dimension {query.shape[0]} does not match the stored "
+            f"{width} from {settings.embedding_model}."
+        )
+    query = query / max(float(np.linalg.norm(query)), 1e-12)
+    scores = index.matrix @ query
+    k = min(top_k, int(scores.shape[0]))
+    if k == scores.shape[0]:
+        order = np.argsort(-scores)
+    else:
+        picked = np.argpartition(-scores, k - 1)[:k]
+        order = picked[np.argsort(-scores[picked])]
     matches: list[tuple[float, dict]] = []
-    for match in payload.get("matches") or []:
-        meta = dict(match.get("metadata") or {})
-        if not meta.get("chunk_id"):
-            meta["chunk_id"] = str(match.get("id") or "")
-        matches.append((float(match.get("score") or 0.0), meta))
+    for position in order:
+        meta = chunk_to_metadata(index.chunks[int(position)])
+        matches.append((float(scores[int(position)]), meta))
     return matches

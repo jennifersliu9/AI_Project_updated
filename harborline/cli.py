@@ -7,6 +7,7 @@ import json
 import os
 import sys
 from collections import Counter
+from dataclasses import replace
 
 from harborline.agent import run_agent
 from harborline.answer import ask
@@ -30,16 +31,10 @@ from harborline.tools import (
 
 
 def _optional_retriever(backend: str | None, settings):
+    from harborline.retrieve import build_retriever
+
     chosen = (backend or settings.retrieve_backend).lower()
-    if chosen == "tfidf":
-        from harborline.retrieve import TfidfRetriever
-
-        return TfidfRetriever(load_chunks(settings), settings)
-    if chosen == "pinecone":
-        from harborline.retrieve import VectorRetriever
-
-        return VectorRetriever(settings)
-    raise ValueError(f"Unknown retrieval backend {chosen!r}. Use pinecone or tfidf.")
+    return build_retriever(replace(settings, retrieve_backend=chosen))
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -48,7 +43,7 @@ def main(argv: list[str] | None = None) -> int:
 
     sub.add_parser(
         "ingest",
-        help="Parse corpus, chunk, embed with OpenAI, and upsert to Pinecone",
+        help="Parse corpus, chunk, embed with the OpenAI API, and cache the cosine index",
     )
 
     ask_p = sub.add_parser("ask", help="Retrieve (and optionally generate) an answer")
@@ -122,12 +117,12 @@ def main(argv: list[str] | None = None) -> int:
         print("  formats:", dict(formats))
         print(f"  json index: {json_path}")
         if settings.retrieve_backend == "tfidf":
-            print("  vector index: skipped (tfidf backend keeps no hosted index)")
+            print("  vector index: skipped (tfidf backend does not call the embeddings API)")
             return 0
         stored = persist_chunks(chunks, settings)
         print(
-            f"  vector index: Pinecone namespace {settings.pinecone_namespace} "
-            f"({stored} embedded chunks, not loaded into this process)"
+            f"  vector index: OpenAI {settings.embedding_model} "
+            f"({stored} embedded chunks, cached in {settings.cache_dir})"
         )
         print(f"  embedding: OpenAIEmbeddings {settings.embedding_model} (cloud API)")
         return 0

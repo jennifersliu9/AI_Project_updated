@@ -1,4 +1,4 @@
-"""Retrieval: hosted Pinecone by default, TF-IDF as an offline fallback."""
+"""Retrieval: OpenAI cloud embeddings by default, TF-IDF as an offline fallback."""
 
 from __future__ import annotations
 
@@ -76,7 +76,7 @@ class TfidfRetriever:
 
 
 class VectorRetriever:
-    """Search Pinecone. This object does not hold the corpus index."""
+    """Search the OpenAI embedding index. The matrix lives in the store cache."""
 
     def __init__(self, settings: Settings | None = None):
         self.settings = settings or get_settings()
@@ -115,17 +115,17 @@ def build_retriever(settings: Settings | None = None):
     backend = settings.retrieve_backend
     if backend == "tfidf":
         return TfidfRetriever(load_chunks(settings), settings)
-    if backend == "pinecone":
+    if backend == "openai":
         return VectorRetriever(settings)
-    if backend == "faiss":
+    if backend in {"pinecone", "faiss"}:
         raise ValueError(
-            "HARBORLINE_RETRIEVE_BACKEND=faiss has been removed. "
-            "This process no longer downloads sentence-transformer weights or "
-            "loads a FAISS index into memory. Use pinecone "
-            "(OpenAI text-embedding-3-small + a hosted Pinecone index) or tfidf."
+            f"HARBORLINE_RETRIEVE_BACKEND={backend} has been removed. "
+            "Retrieval embeds with the OpenAI API (text-embedding-3-small) and "
+            "ranks those vectors in process. Set HARBORLINE_RETRIEVE_BACKEND=openai, "
+            "or tfidf for offline lexical search."
         )
     raise ValueError(
-        f"Unknown HARBORLINE_RETRIEVE_BACKEND={backend!r}. Use pinecone or tfidf."
+        f"Unknown HARBORLINE_RETRIEVE_BACKEND={backend!r}. Use openai or tfidf."
     )
 
 

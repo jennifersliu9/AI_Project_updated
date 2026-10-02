@@ -208,7 +208,7 @@ def stdio_server_env(extra_env: dict[str, str] | None = None) -> dict[str, str]:
     OPENAI_API_KEY is set.
     """
     env = {
-        "HARBORLINE_RETRIEVE_BACKEND": os.environ.get("HARBORLINE_RETRIEVE_BACKEND", "pinecone"),
+        "HARBORLINE_RETRIEVE_BACKEND": os.environ.get("HARBORLINE_RETRIEVE_BACKEND", "openai"),
         "HARBORLINE_REWRITE": os.environ.get("HARBORLINE_REWRITE", "true"),
         "HARBORLINE_RERANK": os.environ.get("HARBORLINE_RERANK", "true"),
         "PYTHONUNBUFFERED": "1",
@@ -222,11 +222,6 @@ def stdio_server_env(extra_env: dict[str, str] | None = None) -> dict[str, str]:
         "OPENAI_MODEL",
         "OPENAI_BASE_URL",
         "HARBORLINE_EMBEDDING_MODEL",
-        "PINECONE_API_KEY",
-        "PINECONE_INDEX_HOST",
-        "PINECONE_INDEX_NAME",
-        "PINECONE_NAMESPACE",
-        "PINECONE_API_VERSION",
     ):
         if os.environ.get(name):
             env[name] = os.environ[name]

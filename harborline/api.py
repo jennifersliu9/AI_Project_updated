@@ -110,7 +110,6 @@ def health() -> dict:
         "embedding_model": settings.embedding_model,
         "vector_index": vector_index_label(settings),
         "has_openai_key": bool(settings.openai_api_key),
-        "has_pinecone_key": bool(settings.pinecone_api_key),
         "mcp": mcp,
     }
 

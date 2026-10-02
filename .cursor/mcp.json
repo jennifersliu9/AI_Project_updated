@@ -7,7 +7,7 @@
       "cwd": "${workspaceFolder}",
       "envFile": "${workspaceFolder}/.env",
       "env": {
-        "HARBORLINE_RETRIEVE_BACKEND": "pinecone",
+        "HARBORLINE_RETRIEVE_BACKEND": "openai",
         "PYTHONUNBUFFERED": "1"
       }
     },

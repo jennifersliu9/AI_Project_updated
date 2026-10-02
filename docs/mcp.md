@@ -93,7 +93,7 @@ FastMCP derives JSON Schema from those function signatures. Example for `search_
       "cwd": "${workspaceFolder}",
       "envFile": "${workspaceFolder}/.env",
       "env": {
-        "HARBORLINE_RETRIEVE_BACKEND": "pinecone",
+        "HARBORLINE_RETRIEVE_BACKEND": "openai",
         "PYTHONUNBUFFERED": "1"
       }
     }
@@ -108,7 +108,7 @@ On macOS/Linux the command is `${workspaceFolder}/.venv/bin/python`.
 1. **Enable MCP** in Cursor Settings and allow the `harborline` server when prompted.
 2. **Restart Cursor** after any `.cursor/mcp.json` change so the stdio process is relaunched.
 3. Confirm `.venv` exists and `pip install -r requirements.txt` plus `pip install -e .` have been run so `mcp` and `harborline` import in the server process.
-4. For Pinecone retrieval in the Cursor-hosted server, put `OPENAI_API_KEY`, `PINECONE_API_KEY`, and `PINECONE_INDEX_HOST` (or `PINECONE_INDEX_NAME`) in `.env`, then run `python -m harborline.cli ingest` once. The index stays in Pinecone. Set `HARBORLINE_RETRIEVE_BACKEND=tfidf` in `mcp.json` to skip embeddings entirely.
+4. For OpenAI retrieval in the Cursor-hosted server, put `OPENAI_API_KEY` in `.env`, then run `python -m harborline.cli ingest` once. Ingest calls the embeddings API and caches vectors under `.cache/`. Set `HARBORLINE_RETRIEVE_BACKEND=tfidf` in `mcp.json` to skip embeddings entirely.
 5. LLM-worded answers: put `OPENAI_API_KEY` only in a local `.env`. Leave `HARBORLINE_ANSWER_MODE` unset so the server selects `llm`. Do not set `HARBORLINE_ANSWER_MODE` inside `env` in `mcp.json` — that block overrides `envFile` and would pin retrieve mode even when `.env` has a key. A key saved only in Cursor Settings → Models is for Cursor's chat, not this process. Never commit the key.
 6. If you want Streamable HTTP instead of stdio, **you** start `python -m harborline.mcp_server --transport streamable-http` and add that URL in Cursor MCP settings.
 7. A real HarborHub / email / ticket write is **not** in scope. `confirm=true` is still a session-only mock.

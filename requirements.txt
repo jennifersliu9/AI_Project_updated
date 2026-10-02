@@ -10,7 +10,7 @@ starlette==0.46.2
 uvicorn==0.34.2
 
 # Embeddings (text-embedding-3-small) and optional LLM answers.
-# Imported when the pinecone backend or HARBORLINE_ANSWER_MODE=llm is used.
+# Imported when the openai backend or HARBORLINE_ANSWER_MODE=llm is used.
 openai==1.82.0
 
 # MCP stdio server (Cursor still has to enable MCP in Settings).
