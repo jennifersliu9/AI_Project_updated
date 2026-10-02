@@ -46,6 +46,64 @@ def test_cursor_mcp_json_does_not_pin_retrieve_mode():
     assert server["envFile"].endswith(".env")
 
 
+def test_openai_key_is_recognized_and_generates_an_answer(monkeypatch):
+    monkeypatch.delenv("HARBORLINE_ANSWER_MODE", raising=False)
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    monkeypatch.setenv("OPENAI_MODEL", "gpt-4o-mini")
+    get_settings.cache_clear()
+
+    class _Message:
+        content = "After the second anniversary, PTO is 20 days."
+
+    class _Choice:
+        def __init__(self):
+            self.message = _Message()
+
+    class _Response:
+        def __init__(self):
+            self.choices = [_Choice()]
+
+    class _Completions:
+        def create(self, **kwargs):
+            assert kwargs["model"] == "gpt-4o-mini"
+            assert kwargs["temperature"] == 0
+            assert kwargs["messages"][0]["role"] == "system"
+            joined = kwargs["messages"][1]["content"]
+            assert "PTO" in joined
+            return _Response()
+
+    class _Chat:
+        def __init__(self):
+            self.completions = _Completions()
+
+    class _OpenAI:
+        def __init__(self, **kwargs):
+            assert kwargs["api_key"] == "sk-test"
+            self.chat = _Chat()
+
+    monkeypatch.setattr("openai.OpenAI", _OpenAI)
+    from harborline.answer import ask
+    from harborline.ingest import load_chunks
+    from harborline.retrieve import TfidfRetriever
+
+    try:
+        settings = get_settings()
+        assert settings.openai_api_key == "sk-test"
+        assert settings.answer_mode == "llm"
+        retriever = TfidfRetriever(load_chunks(settings), settings)
+        result = ask(
+            "How many PTO days do I get after my second anniversary?",
+            settings=settings,
+            retriever=retriever,
+        )
+    finally:
+        get_settings.cache_clear()
+    assert result["mode"] == "llm"
+    assert result["guardrail_ok"] is True
+    assert result["answer"] == "After the second anniversary, PTO is 20 days."
+    assert result["sources"]
+
+
 def test_llm_mode_rewrites_agent_answer(monkeypatch):
     monkeypatch.setenv("HARBORLINE_ANSWER_MODE", "llm")
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test")

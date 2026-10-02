@@ -36,6 +36,7 @@ jobs:
         run: |
           pytest -q \
             tests/test_api.py \
+            tests/test_answer_mode.py \
             tests/test_mcp.py \
             tests/test_agent.py \
             tests/test_tools.py \

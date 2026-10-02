@@ -103,6 +103,7 @@ def health() -> dict:
         "seed": settings.seed,
         "answer_mode": settings.answer_mode,
         "answer_mode_detail": describe_answer_mode(settings),
+        "llm_answers": settings.answer_mode == "llm" and bool(settings.openai_api_key),
         "retrieve_backend": settings.retrieve_backend,
         "embedding_provider": settings.embedding_provider,
         "embedding_class": OpenAIEmbeddings.__name__,

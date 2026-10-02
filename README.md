@@ -149,7 +149,7 @@ Optional filters: `--kind policy`, `--kind structured`, `--source-format md`.
 
 Skipping ingest makes the first `ask` embed and upsert on the fly. Set `HARBORLINE_RETRIEVE_BACKEND=tfidf` to skip embeddings and the hosted index entirely (this is what pytest and CI use).
 
-**LLM answers** keep the same retrieval, rewrite, rerank, citations, and guardrails. Put `OPENAI_API_KEY` in `.env`, set `HARBORLINE_ANSWER_MODE=llm`, and rerun `ask`. Temperature is `0` and `seed` is `42`. The written answer is structured as policy fact, citations, and a note that it is not a recommendation. Set `OPENAI_BASE_URL` for Azure or another gateway.
+**LLM answers** keep the same retrieval, rewrite, rerank, citations, and guardrails. Put `OPENAI_API_KEY` in `.env` and leave `HARBORLINE_ANSWER_MODE` unset (or set it to `llm`). Temperature is `0` and `seed` is `42`. The model writes the answer from the retrieved snippets. Set `OPENAI_BASE_URL` for Azure or another gateway. `/health` reports `has_openai_key` and `llm_answers`.
 
 ## Agent
 
@@ -297,7 +297,7 @@ For Cloud Run, App Service, Fly.io, or Render, set the same env vars on the serv
 | OpenAI embeddings | `text-embedding-3-small` | No local weight files |
 | Pinecone | hosted cosine index, dimension 1536 | Index is not loaded into process memory |
 | TF-IDF | optional | Stable sort: score descending, `chunk_id` ascending |
-| LLM | temperature 0, seed 42 | Only when `HARBORLINE_ANSWER_MODE=llm` |
+| LLM | temperature 0, seed 42 | When `OPENAI_API_KEY` is set and answer mode is not pinned to `retrieve` |
 
 ## Layout
 
