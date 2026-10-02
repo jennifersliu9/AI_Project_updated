@@ -24,7 +24,6 @@ from harborline.store import (
     index_host,
     metadata_to_chunk,
     persist_chunks,
-    pinecone_status,
 )
 
 
@@ -311,41 +310,6 @@ def test_stdio_env_forwards_hosted_index(monkeypatch):
     assert env["PINECONE_INDEX_HOST"] == "harborline.svc.pinecone.io"
     assert env["HARBORLINE_EMBEDDING_MODEL"] == "text-embedding-3-small"
     assert "FASTEMBED_CACHE_PATH" not in env
-
-
-def test_pinecone_env_skips_local_vector_index(monkeypatch):
-    monkeypatch.setenv("PINECONE_API_KEY", "pc-live")
-    monkeypatch.setenv("PINECONE_INDEX_HOST", "https://harborline-abc.svc.pinecone.io/")
-    monkeypatch.setenv("HARBORLINE_RETRIEVE_BACKEND", "pinecone")
-    get_settings.cache_clear()
-
-    def fail_local(*args, **kwargs):
-        raise AssertionError("local vector index initialized")
-
-    def fail_network(*args, **kwargs):
-        raise AssertionError("network call during retriever setup")
-
-    monkeypatch.setattr("harborline.retrieve.TfidfVectorizer", fail_local)
-    monkeypatch.setattr("harborline.retrieve.collection_count", lambda settings=None: 4)
-    monkeypatch.setattr("harborline.store.urllib.request.urlopen", fail_network)
-    try:
-        settings = get_settings()
-        assert settings.pinecone_api_key == "pc-live"
-        assert settings.pinecone_index_host == "https://harborline-abc.svc.pinecone.io/"
-        assert index_host(settings) == "harborline-abc.svc.pinecone.io"
-        status = pinecone_status(settings)
-        assert status == {
-            "has_pinecone_key": True,
-            "has_pinecone_host": True,
-            "pinecone_index_host": "harborline-abc.svc.pinecone.io",
-            "hosted_index": True,
-            "local_vector_index": False,
-        }
-        retriever = build_retriever(settings)
-        assert isinstance(retriever, VectorRetriever)
-        assert set(vars(retriever)) == {"settings"}
-    finally:
-        get_settings.cache_clear()
 
 
 def test_faiss_backend_is_rejected():

@@ -116,8 +116,6 @@ def build_retriever(settings: Settings | None = None):
     if backend == "tfidf":
         return TfidfRetriever(load_chunks(settings), settings)
     if backend == "pinecone":
-        # Hosted only. PINECONE_API_KEY and PINECONE_INDEX_HOST select the
-        # remote index; this branch never builds a local vector index.
         return VectorRetriever(settings)
     if backend == "faiss":
         raise ValueError(

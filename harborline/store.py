@@ -215,28 +215,8 @@ def _normalize_host(raw: str | None) -> str:
     return host.split("/")[0]
 
 
-def pinecone_status(settings: Settings | None = None) -> dict:
-    """How the process saw PINECONE_API_KEY and PINECONE_INDEX_HOST.
-
-    When both are set and the backend is pinecone, retrieval uses the hosted
-    index. This process has no local vector index to initialize.
-    """
-    settings = settings or get_settings()
-    host = _normalize_host(settings.pinecone_index_host)
-    key_set = bool((settings.pinecone_api_key or "").strip())
-    host_set = bool(host)
-    hosted = settings.retrieve_backend == "pinecone" and key_set and host_set
-    return {
-        "has_pinecone_key": key_set,
-        "has_pinecone_host": host_set,
-        "pinecone_index_host": host or None,
-        "hosted_index": hosted,
-        "local_vector_index": False,
-    }
-
-
 def index_host(settings: Settings) -> str:
-    """Data-plane host. An explicit PINECONE_INDEX_HOST skips any other lookup."""
+    """Data-plane host. Resolves PINECONE_INDEX_NAME through the control plane once."""
     explicit = _normalize_host(settings.pinecone_index_host)
     if explicit:
         return explicit

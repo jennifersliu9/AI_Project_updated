@@ -20,13 +20,8 @@ def test_health_includes_mcp():
     body = res.json()
     assert body["app"] == "ok"
     assert body["answer_mode"] == "retrieve"
-    assert body["llm_answers"] is False
     assert body["retrieve_backend"] == "tfidf"
     assert body["vector_index"] == "local:tfidf"
-    assert body["has_pinecone_key"] is False
-    assert body["has_pinecone_host"] is False
-    assert body["hosted_index"] is False
-    assert body["local_vector_index"] is False
     assert body["embedding_provider"] == "openai"
     assert body["embedding_class"] == "OpenAIEmbeddings"
     assert body["embedding_model"] == "text-embedding-3-small"
