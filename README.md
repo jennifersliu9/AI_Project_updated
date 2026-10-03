@@ -14,6 +14,9 @@ Deeper references:
 | Retrieval gold set (15 questions) | [eval/gold_questions.json](eval/gold_questions.json) |
 | Agent gold set (26 tasks) | [eval/eval_tasks.json](eval/eval_tasks.json) |
 | Latest scored report | [eval/REPORT.md](eval/REPORT.md) |
+| Architecture, RAG, MCP, guardrails, evaluation | [design-and-evaluation.md](design-and-evaluation.md) |
+| AI coding tools used on this repo | [ai-tooling.md](ai-tooling.md) |
+| Deployed URL and cold starts | [deployed.md](deployed.md) |
 
 ## What is in the repo
 
@@ -170,15 +173,32 @@ python -m harborline.cli tool get_policy_section POL-PTO-001 --section Eligibili
 python -m harborline.cli tool create_mock_hr_ticket --topic pto_request --employee-id EMP-1008 --summary "Friday off"
 ```
 
-## People Desk (HTTP)
+## Local run
 
-Run ingest once so the OpenAI embedding cache is populated, then:
+From the repository root, with the virtualenv active.
+
+Offline lexical search (no API key):
+
+```bash
+python -m harborline.cli ask "How many PTO days do I get after my second anniversary?" --backend tfidf
+python -m harborline.cli agent "Am I eligible for fully remote work living in Tacoma?" --employee-id EMP-1008 --backend tfidf
+```
+
+OpenAI embeddings and LLM answers (needs `OPENAI_API_KEY` in `.env` and `HARBORLINE_ANSWER_MODE=llm`):
+
+```bash
+python -m harborline.cli ingest
+python -m harborline.cli ask "When does the 401k match vest?"
+python -m harborline.cli agent "What medical plan and 401k deferral do I have?" --employee-id EMP-1008
+```
+
+People Desk HTTP. Run ingest first when the backend is `openai`, then:
 
 ```bash
 uvicorn harborline.api:app --reload --port 8000
 ```
 
-Open [http://127.0.0.1:8000](http://127.0.0.1:8000). The page has two grader demos (EMP-1008 remote eligibility, EMP-1014 PTO). The same calls over HTTP:
+Open [http://127.0.0.1:8000](http://127.0.0.1:8000). The page has two grader demos, both for EMP-1008: remote eligibility and benefits election. The same calls over HTTP:
 
 ```bash
 curl http://127.0.0.1:8000/health
@@ -299,11 +319,21 @@ For Cloud Run, App Service, Fly.io, or Render, set `OPENAI_API_KEY` and `HARBORL
 ```
 corpus/                  Policies (md, html, txt, pdf) and corpus/README.md
 data/                    Mock offices, employees, PTO, benefits, tickets
-eval/                    gold_questions.json, eval_tasks.json, REPORT.md
-harborline/              Parse, chunk, OpenAI embed, cosine index, ask, tools, MCP, agent, API, static UI
+                         (the mock_data/ equivalent)
+eval/                    Gold questions, rubrics, REPORT.md
+                         (the evaluation/ equivalent)
+harborline/              Parse, chunk, OpenAI embed, cosine index, ask, tools, agent, API
+harborline/mcp_server.py MCP server and tool definitions (the mcp/ equivalent)
+harborline/mcp_client.py MCP client used by the agent
+harborline/tools.py      Tool implementations behind the MCP server
+harborline/evaluate.py   Retrieval eval runner
+harborline/benchmark.py  26-task report runner
 docs/mcp.md              MCP transport, schemas, discovery
+design-and-evaluation.md Architecture, RAG, MCP, guardrails, eval results
+ai-tooling.md            AI coding tools used on this repo
+deployed.md              Public URL, health URL, cold-start notes
 .cursor/mcp.json         Cursor MCP config (enable the server in Settings)
-scripts/build_pdfs.py    Rebuild the companion PDFs
+scripts/build_pdfs.py    Rebuild the companion policy PDFs
 tests/                   Ingest, eval, tools, MCP, agent, API
 .github/workflows/ci.yml Install, test, then optional Render deploy
 requirements.txt         Runtime pins
