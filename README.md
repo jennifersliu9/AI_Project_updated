@@ -2,6 +2,8 @@
 
 Employee Q&A for fictional **Harborline Technologies**. The repo holds a 2026 policy corpus, HarborHub-style employee records, and a seeded retrieval app that answers questions about PTO, holidays, remote work, expenses, security, benefits, onboarding, equipment, leave, and conduct.
 
+**Deployed application:** [https://ai-project-updated-1.onrender.com/](https://ai-project-updated-1.onrender.com/) (health: [https://ai-project-updated-1.onrender.com/health](https://ai-project-updated-1.onrender.com/health)).
+
 Answer mode is `HARBORLINE_ANSWER_MODE=llm`. With `OPENAI_API_KEY` set, the chat model writes the answer from retrieved snippets. Retrieval calls OpenAI `text-embedding-3-small` and ranks those vectors in process, so that key is required unless you set `HARBORLINE_RETRIEVE_BACKEND=tfidf`. `HARBORLINE_ANSWER_MODE=retrieve` keeps extractive quotes. Tickets and emails are session-only mocks; nothing is written to HarborHub or to `data/tickets.json`.
 
 Deeper references:
@@ -16,7 +18,7 @@ Deeper references:
 | Latest scored report | [eval/REPORT.md](eval/REPORT.md) |
 | Architecture, RAG, MCP, guardrails, evaluation | [design-and-evaluation.md](design-and-evaluation.md) |
 | AI coding tools used on this repo | [ai-tooling.md](ai-tooling.md) |
-| Deployed URL and cold starts | [deployed.md](deployed.md) |
+| Deployed URL and cold starts | [https://ai-project-updated-1.onrender.com/](https://ai-project-updated-1.onrender.com/) · [deployed.md](deployed.md) |
 
 ## What is in the repo
 
