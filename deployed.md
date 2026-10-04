@@ -22,9 +22,7 @@ Environment:
 | --- | --- |
 | `OPENAI_API_KEY` | The same key used for embeddings and chat. Do not commit it. |
 | `HARBORLINE_ANSWER_MODE` | `llm`. This overrides the image default of `retrieve`. |
-| `HARBORLINE_RETRIEVE_BACKEND` | Leave unset, or set `openai`. Do not set `tfidf`, `pinecone`, or `faiss` on the service. |
-
-`PINECONE_API_KEY`, `PINECONE_INDEX_HOST`, `PINECONE_INDEX_NAME`, and `PINECONE_NAMESPACE` are unused. Remove them if an older service still has them.
+| `HARBORLINE_RETRIEVE_BACKEND` | Leave unset, or set `openai`. |
 
 ## Free-tier cold starts
 

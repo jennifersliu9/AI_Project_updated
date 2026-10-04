@@ -56,13 +56,13 @@ The web app is FastAPI (`harborline/api.py`) plus the People Desk page. `POST /a
 
 Ingest parses `corpus/` by heading (Markdown and HTML), by page (PDF), and by window (TXT). `data/*.json` becomes structured records joined on `employee_id`. A section longer than 900 characters is split into 900-character windows with 120 characters of overlap (`HARBORLINE_CHUNK_SIZE`, `HARBORLINE_CHUNK_OVERLAP`). Each chunk keeps `title`, `section`, `source_path`, `source_format`, `snippet`, `kind`, and ids so answers can cite them.
 
-Embeddings are OpenAI `text-embedding-3-small` (1536 dimensions) from the embeddings API. `OpenAIEmbeddings` is the only embedding class. A Hugging Face or sentence-transformer id is rejected, and the process does not download local weights. Vectors are L2-normalized and cached under `.cache/` (`openai_vectors.npz`, `openai_chunks.json`). Query time embeds one string and ranks that matrix with cosine similarity.
+Embeddings are OpenAI `text-embedding-3-small` (1536 dimensions) from the embeddings API. `OpenAIEmbeddings` calls that API. Vectors are L2-normalized and cached under `.cache/` (`openai_vectors.npz`, `openai_chunks.json`). Query time embeds one string and ranks that matrix with cosine similarity.
 
-Before search, `harborline/rewrite.py` appends policy synonyms (for example PTO expands toward POL-PTO-001). Search takes `HARBORLINE_FETCH_K=20` candidates, then `harborline/rerank.py` keeps `HARBORLINE_TOP_K=5`. The blend is 0.65 cosine and 0.35 lexical overlap, and the reranker prefers distinct source files. `HARBORLINE_RETRIEVE_BACKEND=tfidf` skips the embeddings API. Pytest and CI use that path. `pinecone` and `faiss` are rejected.
+Before search, `harborline/rewrite.py` appends policy synonyms (for example PTO expands toward POL-PTO-001). Search takes `HARBORLINE_FETCH_K=20` candidates, then `harborline/rerank.py` keeps `HARBORLINE_TOP_K=5`. The blend is 0.65 cosine and 0.35 lexical overlap, and the reranker prefers distinct source files. `HARBORLINE_RETRIEVE_BACKEND=tfidf` skips the embeddings API. Pytest and CI use that path. The Render service uses `openai`.
 
 ## MCP server design
 
-One FastMCP server, name `harborline`, lives in `harborline/mcp_server.py`. That file is the `mcp/` equivalent. The agent does not import `harborline.tools` for its tool path. It discovers tools with MCP `tools/list` and invokes them with `tools/call`. `harborline/tools.py` is the implementation behind the server. `harborline/mcp_client.py` is the client. Schemas and transports are also described in [docs/mcp.md](docs/mcp.md).
+One FastMCP server, name `harborline`, lives in `harborline/mcp_server.py`. The agent does not import `harborline.tools` for its tool path. It discovers tools with MCP `tools/list` and invokes them with `tools/call`. `harborline/tools.py` is the implementation behind the server. `harborline/mcp_client.py` is the client. Schemas and transports are also described in [docs/mcp.md](docs/mcp.md).
 
 Transports:
 
@@ -122,11 +122,11 @@ Policy tools read the RAG index. Profile, PTO, and benefits tools read `data/*.j
 
 The image is `Dockerfile`: Python 3.12, FastAPI via uvicorn on port 8000, `corpus/`, `data/`, and `eval/` copied in. Secrets stay in the host environment. The image sets `HARBORLINE_RETRIEVE_BACKEND=openai` and `HARBORLINE_EMBEDDING_MODEL=text-embedding-3-small`. It also pins `HARBORLINE_ANSWER_MODE=retrieve`, so a Render service variable `HARBORLINE_ANSWER_MODE=llm` has to override that pin when the chat model should write answers.
 
-The deployed app is https://ai-project-updated-1.onrender.com/ and health is https://ai-project-updated-1.onrender.com/health. On Render, set `OPENAI_API_KEY` and `HARBORLINE_ANSWER_MODE=llm`, and set the service port to 8000. Do not set `HARBORLINE_RETRIEVE_BACKEND` to `tfidf` on the service if embeddings should run, and do not set `pinecone` or `faiss`. The first search after a restart calls the embeddings API and holds the matrix in that process. `.cache/` does not survive a new deploy. GitHub Actions runs tests with TF-IDF and calls a Render deploy hook only when the `RENDER_DEPLOY_HOOK` secret is set. See [deployed.md](deployed.md).
+The deployed app is https://ai-project-updated-1.onrender.com/ and health is https://ai-project-updated-1.onrender.com/health. On Render, set `OPENAI_API_KEY` and `HARBORLINE_ANSWER_MODE=llm`, and set the service port to 8000. Leave `HARBORLINE_RETRIEVE_BACKEND` unset, or set `openai`. The first search after a restart calls the embeddings API and holds the matrix in that process. `.cache/` does not survive a new deploy. GitHub Actions runs tests with TF-IDF and calls a Render deploy hook only when the `RENDER_DEPLOY_HOOK` secret is set. See [deployed.md](deployed.md).
 
 ## Evaluation
 
-The `evaluation/` equivalent is `eval/`, plus the runners and tests:
+Evaluation lives in `eval/`, plus the runners and tests:
 
 | Piece | Path |
 | --- | --- |
