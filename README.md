@@ -19,7 +19,6 @@ Deeper references:
 | Architecture, RAG, MCP, guardrails, evaluation | [design-and-evaluation.md](design-and-evaluation.md) |
 | AI coding tools used on this repo | [ai-tooling.md](ai-tooling.md) |
 | Deployed URL and cold starts | [https://ai-project-updated-1.onrender.com/](https://ai-project-updated-1.onrender.com/) · [deployed.md](deployed.md) |
-| Demo transcript (about 9½ minutes) | [docs/demo-transcript.md](docs/demo-transcript.md) |
 
 ## What is in the repo
 

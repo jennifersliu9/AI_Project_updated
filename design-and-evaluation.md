@@ -78,7 +78,7 @@ stdio needs no open port and matches how Cursor launches MCP servers. In-process
 
 `harborline/agent.py` is a rule-based orchestrator, not a general tool-calling loop. Intent is a regular-expression match over a fixed workflow table. Each workflow then calls a known sequence of MCP tools. The trace records tool name, arguments, and a short output summary. The model does not choose tools. When answer mode is `llm`, `llm_rewrite_answer` rewrites the draft from the snippets and the trace. Temperature is 0 and the seed is 42.
 
-Two People Desk demos in `harborline/demos.py` are the required agentic tasks. Demo 1 uses `EMP-1008`. Demo 2 uses `EMP-1014`. A spoken walkthrough of both tasks, with tool arguments, outputs, citations, and the design, deployment, CI, and evaluation notes, is in [docs/demo-transcript.md](docs/demo-transcript.md).
+Two People Desk demos in `harborline/demos.py` are the required agentic tasks. Demo 1 uses `EMP-1008`. Demo 2 uses `EMP-1014`.
 
 **Demo 1, remote eligibility (`remote-emp-1008`).** Question: “Am I eligible for fully remote work living in Tacoma?”
 
