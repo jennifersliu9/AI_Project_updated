@@ -78,7 +78,7 @@ stdio needs no open port and matches how Cursor launches MCP servers. In-process
 
 `harborline/agent.py` is a rule-based orchestrator, not a general tool-calling loop. Intent is a regular-expression match over a fixed workflow table. Each workflow then calls a known sequence of MCP tools. The trace records tool name, arguments, and a short output summary. The model does not choose tools. When answer mode is `llm`, `llm_rewrite_answer` rewrites the draft from the snippets and the trace. Temperature is 0 and the seed is 42.
 
-Two People Desk demos in `harborline/demos.py` are the required agentic tasks. Both use employee `EMP-1008`.
+Two People Desk demos in `harborline/demos.py` are the required agentic tasks. Demo 1 uses `EMP-1008`. Demo 2 uses `EMP-1014`.
 
 **Demo 1, remote eligibility (`remote-emp-1008`).** Question: “Am I eligible for fully remote work living in Tacoma?”
 
@@ -89,14 +89,13 @@ Two People Desk demos in `harborline/demos.py` are the required agentic tasks. B
 
 Alex Kim is hub-coded in Tacoma, about 32 miles from Seattle. Fully remote work needs a People Operations reclass. Citations come from `03-remote-hybrid-work.md`.
 
-**Demo 2, benefits election (`benefits-emp-1008`).** Question: “What medical plan and 401k deferral do I have?”
+**Demo 2, PTO guidance (`pto-emp-1014`).** Question: “Can I take PTO next week?” Employee: Devon Walsh.
 
-1. `search_policy_documents` with query `benefits 401k medical enrollment POL-BEN-006` and `kind=policy`
-2. `get_policy_section` with `policy_id=POL-BEN-006` and `section=US medical`
-3. `get_policy_section` with `policy_id=POL-BEN-006` and `section=Retirement`
-4. `lookup_benefits_status` with `employee_id=EMP-1008`
+1. `lookup_employee_profile` with `employee_id=EMP-1014`
+2. `check_pto_balance` with `employee_id=EMP-1014`
+3. `get_policy_section` with `policy_id=POL-PTO-001` and `section=Eligibility`
 
-The draft quotes the 100 percent match on the first 4 percent deferred, immediate vesting, and the HarborHub row (HDHP, 3 percent deferral). Citations come from `06-employee-benefits.md`.
+Devon Walsh started 8 Sep 2026, has a 5.0 hour balance, and `eligible_to_use` is false until 2026-10-08. Citations come from `01-paid-time-off.md`.
 
 ## Tool schemas
 

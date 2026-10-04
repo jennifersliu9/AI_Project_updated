@@ -198,15 +198,15 @@ People Desk HTTP. Run ingest first when the backend is `openai`, then:
 uvicorn harborline.api:app --reload --port 8000
 ```
 
-Open [http://127.0.0.1:8000](http://127.0.0.1:8000). The page has two grader demos, both for EMP-1008: remote eligibility and benefits election. The same calls over HTTP:
+Open [http://127.0.0.1:8000](http://127.0.0.1:8000). The page has two grader demos: EMP-1008 remote eligibility, and EMP-1014 PTO (not usable until 8 Oct 2026). The same calls over HTTP:
 
 ```bash
 curl http://127.0.0.1:8000/health
 curl http://127.0.0.1:8000/demos
 curl -X POST http://127.0.0.1:8000/demos/remote-emp-1008
-curl -X POST http://127.0.0.1:8000/demos/benefits-emp-1008
+curl -X POST http://127.0.0.1:8000/demos/pto-emp-1014
 curl -X POST http://127.0.0.1:8000/chat -H "Content-Type: application/json" -d "{\"query\":\"Am I eligible for fully remote work living in Tacoma?\",\"employee_id\":\"EMP-1008\"}"
-curl -X POST http://127.0.0.1:8000/chat -H "Content-Type: application/json" -d "{\"query\":\"What medical plan and 401k deferral do I have?\",\"employee_id\":\"EMP-1008\"}"
+curl -X POST http://127.0.0.1:8000/chat -H "Content-Type: application/json" -d "{\"query\":\"Can I take PTO next week?\",\"employee_id\":\"EMP-1014\"}"
 curl -X POST http://127.0.0.1:8000/ask -H "Content-Type: application/json" -d "{\"query\":\"When does the 401k match vest?\"}"
 ```
 
