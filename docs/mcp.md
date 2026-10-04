@@ -16,7 +16,7 @@ harborline.mcp_client  (StdioMcpBus or InProcessMcpBus)
 harborline.mcp_server  (FastMCP, name=`harborline`)
         │
         ├── search_policy_documents / get_policy_section / check_policy_compliance
-        │       → RAG index (FAISS or TF-IDF) + citation metadata
+        │       → RAG index (OpenAI embeddings or TF-IDF) + citation metadata
         ├── lookup_employee_profile / check_pto_balance / lookup_benefits_status
         │       → mock HarborHub JSON under data/
         └── create_mock_hr_ticket / draft_hr_email
@@ -39,7 +39,7 @@ Streamable HTTP (optional):
 python -m harborline.mcp_server --transport streamable-http --host 127.0.0.1 --port 8765
 ```
 
-The MCP endpoint is then `http://127.0.0.1:8765/mcp`. Pointing Cursor at HTTP instead of stdio is an **EXTERNAL** settings change.
+The MCP endpoint is then `http://127.0.0.1:8765/mcp`. To use HTTP from Cursor, start that process and point the Cursor MCP entry at the URL.
 
 ## How the agent discovers and calls tools
 
@@ -103,7 +103,7 @@ FastMCP derives JSON Schema from those function signatures. Example for `search_
 
 On macOS/Linux the command is `${workspaceFolder}/.venv/bin/python`.
 
-## FLAG — EXTERNAL steps (this chat cannot finish these)
+## Cursor setup
 
 1. **Enable MCP** in Cursor Settings and allow the `harborline` server when prompted.
 2. **Restart Cursor** after any `.cursor/mcp.json` change so the stdio process is relaunched.
