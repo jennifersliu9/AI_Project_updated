@@ -46,15 +46,15 @@ DEMOS: tuple[DemoTask, ...] = (
         citation_source="03-remote-hybrid-work.md",
     ),
     DemoTask(
-        id="benefits-emp-1008",
-        label="Demo 2 · Benefits election · EMP-1008",
+        id="pto-emp-1014",
+        label="Demo 2 · PTO guidance · EMP-1014",
         blurb=(
-            "Looks up Alex Kim's HarborHub medical plan and 401(k) deferral, "
-            "then cites the medical and retirement sections of POL-BEN-006."
+            "Looks up Devon Walsh, checks the HarborHub PTO balance and the "
+            "30-day use rule, and cites eligibility in POL-PTO-001."
         ),
-        query="What medical plan and 401k deferral do I have?",
-        employee_id="EMP-1008",
-        citation_source="06-employee-benefits.md",
+        query="Can I take PTO next week?",
+        employee_id="EMP-1014",
+        citation_source="01-paid-time-off.md",
     ),
 )
 

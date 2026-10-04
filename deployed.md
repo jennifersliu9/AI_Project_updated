@@ -1,15 +1,15 @@
 # Deployment
 
-No public URL is published from this repository yet.
+The People Desk app is deployed on Render.
 
-GitHub Actions runs the test job on every push and pull request. The deploy job runs only after tests pass, and only on pushes to the default branch. It calls a Render deploy hook when the Actions secret `RENDER_DEPLOY_HOOK` is set. That secret is not set, so the job succeeds and does not publish a host. Pull requests never deploy.
+GitHub Actions runs the test job on every push and pull request. The deploy job runs only after tests pass, and only on pushes to the default branch. It calls a Render deploy hook when the Actions secret `RENDER_DEPLOY_HOOK` is set. Pull requests never deploy. The live service below was created on Render from this repo.
 
 ## URL
 
 | Item | Value |
 | --- | --- |
-| Deployed app URL | Not available. Add it here after the first successful Render deploy, for example `https://<service>.onrender.com`. |
-| Health endpoint | Not available until the service exists. It will be the app URL plus `/health`. |
+| Deployed app URL | https://ai-project-updated-1.onrender.com/ |
+| Health endpoint | https://ai-project-updated-1.onrender.com/health |
 | What `/health` should show | `retrieve_backend` of `openai`, `embedding_model` of `text-embedding-3-small`, `has_openai_key` true, `answer_mode` of `llm`, and `llm_answers` true. |
 
 ## Render settings
@@ -25,8 +25,6 @@ Environment:
 | `HARBORLINE_RETRIEVE_BACKEND` | Leave unset, or set `openai`. Do not set `tfidf`, `pinecone`, or `faiss` on the service. |
 
 `PINECONE_API_KEY`, `PINECONE_INDEX_HOST`, `PINECONE_INDEX_NAME`, and `PINECONE_NAMESPACE` are unused. Remove them if an older service still has them.
-
-After the service is live, put the URL and the `/health` URL in the table above.
 
 ## Free-tier cold starts
 

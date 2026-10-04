@@ -36,7 +36,7 @@ def test_demos_list():
     assert res.status_code == 200
     demos = res.json()["demos"]
     ids = [d["id"] for d in demos]
-    assert ids == ["remote-emp-1008", "benefits-emp-1008"]
+    assert ids == ["remote-emp-1008", "pto-emp-1014"]
     assert len({d["query"] for d in demos}) == 2
     for demo in demos:
         assert demo["query"]
@@ -66,11 +66,11 @@ def _assert_stable_demo(demo: dict) -> dict:
     return a
 
 
-def test_remote_and_benefits_demos_match_chat():
+def test_remote_and_pto_demos_match_chat():
     demos = client.get("/demos").json()["demos"]
-    remote, benefits = demos
+    remote, pto = demos
     remote_body = _assert_stable_demo(remote)
-    benefits_body = _assert_stable_demo(benefits)
+    pto_body = _assert_stable_demo(pto)
     assert remote_body["intent"] == "remote_eligibility"
     assert "Alex Kim" in remote_body["answer"]
     assert "hub" in remote_body["answer"].lower()
@@ -79,17 +79,20 @@ def test_remote_and_benefits_demos_match_chat():
     assert "search_policy_documents" in remote_tools
     assert "get_policy_section" in remote_tools
     assert "check_policy_compliance" in remote_tools
-    assert benefits_body["intent"] == "benefits"
-    assert "HDHP" in benefits_body["answer"]
-    assert "3%" in benefits_body["answer"]
-    benefits_tools = [step["tool"] for step in benefits_body["trace"]]
-    assert "lookup_benefits_status" in benefits_tools
-    assert "search_policy_documents" in benefits_tools
-    assert benefits_tools.count("get_policy_section") == 2
-    assert remote_body["answer"] != benefits_body["answer"]
-    assert [step["tool"] for step in remote_body["trace"]] != [step["tool"] for step in benefits_body["trace"]]
+    assert pto_body["intent"] == "pto_guidance"
+    assert "Devon Walsh" in pto_body["answer"]
+    assert "5.0" in pto_body["answer"]
+    assert "2026-10-08" in pto_body["answer"]
+    pto_tools = [step["tool"] for step in pto_body["trace"]]
+    assert pto_tools == [
+        "lookup_employee_profile",
+        "check_pto_balance",
+        "get_policy_section",
+    ]
+    assert remote_body["answer"] != pto_body["answer"]
+    assert [step["tool"] for step in remote_body["trace"]] != pto_tools
 
 
 def test_unknown_demo_is_404():
-    res = client.post("/demos/pto-emp-1014")
+    res = client.post("/demos/benefits-emp-1008")
     assert res.status_code == 404

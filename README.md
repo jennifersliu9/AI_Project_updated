@@ -198,15 +198,15 @@ People Desk HTTP. Run ingest first when the backend is `openai`, then:
 uvicorn harborline.api:app --reload --port 8000
 ```
 
-Open [http://127.0.0.1:8000](http://127.0.0.1:8000). The page has two grader demos, both for EMP-1008: remote eligibility and benefits election. The same calls over HTTP:
+Open [http://127.0.0.1:8000](http://127.0.0.1:8000). The page has two grader demos: EMP-1008 remote eligibility, and EMP-1014 PTO (not usable until 8 Oct 2026). The same calls over HTTP:
 
 ```bash
 curl http://127.0.0.1:8000/health
 curl http://127.0.0.1:8000/demos
 curl -X POST http://127.0.0.1:8000/demos/remote-emp-1008
-curl -X POST http://127.0.0.1:8000/demos/benefits-emp-1008
+curl -X POST http://127.0.0.1:8000/demos/pto-emp-1014
 curl -X POST http://127.0.0.1:8000/chat -H "Content-Type: application/json" -d "{\"query\":\"Am I eligible for fully remote work living in Tacoma?\",\"employee_id\":\"EMP-1008\"}"
-curl -X POST http://127.0.0.1:8000/chat -H "Content-Type: application/json" -d "{\"query\":\"What medical plan and 401k deferral do I have?\",\"employee_id\":\"EMP-1008\"}"
+curl -X POST http://127.0.0.1:8000/chat -H "Content-Type: application/json" -d "{\"query\":\"Can I take PTO next week?\",\"employee_id\":\"EMP-1014\"}"
 curl -X POST http://127.0.0.1:8000/ask -H "Content-Type: application/json" -d "{\"query\":\"When does the 401k match vest?\"}"
 ```
 
@@ -285,6 +285,8 @@ Two policy-QA tasks in that snapshot (`t-pto-tenure`, `t-pto-carryover`) are mar
 
 ## Deployment
 
+The live service is [https://ai-project-updated-1.onrender.com/](https://ai-project-updated-1.onrender.com/). Health is [https://ai-project-updated-1.onrender.com/health](https://ai-project-updated-1.onrender.com/health). Cold-start notes are in [deployed.md](deployed.md).
+
 The image serves FastAPI. Pass secrets at runtime. Do not bake keys into the image. The image defaults to the OpenAI embedding backend. Its Dockerfile sets `HARBORLINE_ANSWER_MODE=retrieve`, so the Render service variable must override that. Set `OPENAI_API_KEY` and `HARBORLINE_ANSWER_MODE=llm` on the service. The model then writes the answer. The image copies `corpus/`, `data/`, and `eval/`. It does not download embedding weights. The first search after a restart calls the embeddings API and holds the matrix in that process. `.cache/` is local to the container and does not survive a new deploy. `/health` should show `answer_mode` of `llm` and `llm_answers` true.
 
 ```bash
@@ -301,7 +303,7 @@ For Cloud Run, App Service, Fly.io, or Render, set `OPENAI_API_KEY` and `HARBORL
 1. Install `requirements.txt`, `requirements-dev.txt`, and `pip install -e .` on Python 3.12.
 2. Import check: load `harborline.api:app` and the MCP server factory (at least five tools).
 3. `pytest` for the API, MCP discovery and `lookup_employee_profile`, the agent, tools, ingest, retrieval eval, and generation.
-4. The deploy job runs only after that test job succeeds. Pull requests never deploy. On push, CI calls a Render deploy hook only when the `RENDER_DEPLOY_HOOK` GitHub Actions secret is set. Until then the job succeeds and does not publish a URL.
+4. The deploy job runs only after that test job succeeds. Pull requests never deploy. On push, CI calls a Render deploy hook only when the `RENDER_DEPLOY_HOOK` GitHub Actions secret is set. The live service is https://ai-project-updated-1.onrender.com/ and its health check is https://ai-project-updated-1.onrender.com/health.
 
 ## Reproducibility
 
