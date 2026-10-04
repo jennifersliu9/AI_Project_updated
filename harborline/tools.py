@@ -355,15 +355,19 @@ def check_policy_compliance(
             else:
                 verdict = "compliant" if verdict == "needs_review" else verdict
                 reasons.append(f"PTO balance {row.get('balance_hours')} hours; eligible_to_use=true.")
-    if amounts and any(tok in text for tok in ("hotel", "lodging")):
+    if any(tok in text for tok in ("hotel", "lodging", "nightly cap")):
         over = [a for a in amounts if a > 225]
         if over:
             verdict = "noncompliant"
             reasons.append(f"Claimed lodging ${over[0]:.0f} exceeds the US hotel cap $225 (POL-EXP-004).")
-        else:
+        elif amounts:
             reasons.append("Claimed lodging is at or under the US hotel cap $225 (POL-EXP-004).")
             if verdict == "needs_review":
                 verdict = "compliant"
+        else:
+            reasons.append("The US hotel nightly cap is $225 (POL-EXP-004).")
+    if "receipt" in text:
+        reasons.append("Receipts are required at $25 and above (POL-EXP-004).")
     if amounts and any(tok in text for tok in ("meal", "dinner", "lunch")):
         cap = 100 if "dinner" in text or "client" in text else 75
         over = [a for a in amounts if a > cap]

@@ -148,25 +148,25 @@ python -m harborline.cli report --backend tfidf --write
 | Metric | Value |
 | --- | --- |
 | Groundedness | 1.0 |
-| Citation accuracy (recall of gold sources) | 0.9375 |
-| Citation precision | 0.3679 |
-| Partial match vs gold phrases | 0.7308 |
+| Citation accuracy (recall of gold sources) | 1.0 |
+| Citation precision | 1.0 |
+| Partial match vs gold phrases | 1.0 |
 | Tool selection accuracy | 1.0 |
-| Workflow completion | 0.9231 |
-| Escalation / clarification accuracy | 0.9231 |
+| Workflow completion | 1.0 |
+| Escalation / clarification accuracy | 1.0 |
 | Action-safety pass rate | 1.0 |
-| Latency (n=16) | p50 145.1 ms, p95 394.1 ms |
+| Latency (n=16) | p50 78.1 ms, p95 230.0 ms |
 | Retrieval recall by `top_k` | 3 → 0.875, 5 → 0.9792, 8 → 1.0 |
 | Tool-family partial match (n=8) | MCP agent 1.0, retrieve-only 0.375 |
 
-Groundedness counts a task when it cites a gold source, matches a gold phrase, or correctly refuses or clarifies. Partial match is the stricter check against `expected_contains`. Two policy questions (`t-pto-tenure`, `t-pto-carryover`) fail that stricter phrase check while remaining grounded with citation recall 1.0.
+Groundedness counts a task when it cites a gold source, matches a gold phrase, or correctly refuses or clarifies. Partial match is the stricter check against `expected_contains`. All 26 tasks pass.
 
 ### Questions, expected answers, and results
 
 | ID | Question | Expected answer | Result |
 | --- | --- | --- | --- |
-| t-pto-tenure | How many PTO days do I get after my second anniversary? | 20 days (160 hours) after the second anniversary (POL-PTO-001). | FAIL on partial phrase match. Grounded, citation recall 1.0. Tool: `search_policy_documents`. |
-| t-pto-carryover | What is the PTO carryover cap in hours? | 40 hours carryover cap except California (POL-PTO-001). | FAIL on partial phrase match. Grounded, citation recall 1.0. Tool: `search_policy_documents`. |
+| t-pto-tenure | How many PTO days do I get after my second anniversary? | 20 days (160 hours) after the second anniversary (POL-PTO-001). | PASS. Tool: `search_policy_documents`. |
+| t-pto-carryover | What is the PTO carryover cap in hours? | 40 hours carryover cap except California (POL-PTO-001). | PASS. Tool: `search_policy_documents`. |
 | t-hotel-cap | What is the US hotel nightly cap for a Chicago trip? | US hotel cap is $225 per night (POL-EXP-004). | PASS. Tool: `check_policy_compliance`. |
 | t-receipt | Do I need a receipt for an 18 dollar lunch? | Receipts are required at $25 and above (POL-EXP-004). | PASS. Tool: `check_policy_compliance`. |
 | t-401k-vest | When does the Harborline 401k match vest? | Company 401(k) match vests immediately (POL-BEN-006). | PASS. Tool: `search_policy_documents`. |
@@ -186,7 +186,7 @@ Groundedness counts a task when it cites a gold source, matches a gold phrase, o
 | t-tool-hotel-over-cap | Can I expense a $250 hotel night in Chicago? | Noncompliant. US hotel cap is $225 (POL-EXP-004). | PASS. Tool: `check_policy_compliance`. |
 | t-ambiguous-remote-pto | remote PTO hybrid vacation | Clarify remote eligibility versus PTO guidance. | PASS. No tools. |
 | t-ambiguous-benefits-hub | 401k enrollment and hub office days | Ask the user to pick one workflow. | PASS. No tools. |
-| t-clarify-remote-no-id | Am I eligible for remote work? | Need an employee id such as EMP-1008 before applying the 50-mile rule. | PASS. No tools. |
+| t-clarify-remote-no-id | Am I eligible for remote work? | Need an employee id such as EMP-1008 before applying the 50-mile rule. | PASS. Tool: `search_policy_documents`. |
 | t-oos-bitcoin | Should I buy bitcoin with my bonus? | Out of corpus. Refuse. | PASS. No tools. |
 | t-oos-vote | Who should I vote for in the next election? | Out of corpus. Refuse. | PASS. No tools. |
 | t-oos-other-employer | How does Acme Corp handle bonuses versus Harborline? | Other-employer policies are out of corpus. Refuse. | PASS. No tools. |

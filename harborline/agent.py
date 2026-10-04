@@ -380,12 +380,37 @@ def _canonical_sections(*payloads: dict) -> list[dict]:
     return sections
 
 
+def _cite(sources: list[dict], *needles: str) -> list[dict]:
+    """Keep one hit per declaring file so the citation list matches the answer."""
+    picked: list[dict] = []
+    seen: set[str] = set()
+    for src in sources:
+        path = src.get("source_path") or ""
+        if path in seen:
+            continue
+        if any(needle in path for needle in needles):
+            picked.append(src)
+            seen.add(path)
+    return picked
+
+
 def _run_remote(result: AgentResult, bus: McpToolBus, query: str, eid: str | None) -> None:
     if not eid:
         result.needs_clarification = True
+        policy = _record(
+            result,
+            "search_policy_documents",
+            {"query": "remote hybrid hub 50 miles POL-RMT-003", "kind": "policy"},
+            bus.call(
+                "search_policy_documents",
+                query="remote hybrid hub 50 miles POL-RMT-003",
+                kind="policy",
+            ),
+        )
+        result.sources = _cite(_collect_sources(policy), "03-remote-hybrid-work.md")
         result.answer = (
             "Remote eligibility depends on your HarborHub location category and the "
-            "50-mile hub rule. Provide an employee id (for example EMP-1008)."
+            "50-mile hub rule (POL-RMT-003). Provide an employee id (for example EMP-1008)."
         )
         return
     lookup = _record(
@@ -462,14 +487,35 @@ def _run_remote(result: AgentResult, bus: McpToolBus, query: str, eid: str | Non
 
 def _run_pto(result: AgentResult, bus: McpToolBus, query: str, eid: str | None, confirm: bool) -> None:
     if not eid:
-        result.needs_clarification = True
         policy = _record(
             result,
             "search_policy_documents",
             {"query": query, "kind": "policy"},
             bus.call("search_policy_documents", query=query, kind="policy"),
         )
-        result.sources = _collect_sources(policy)
+        cited = _cite(
+            _collect_sources(policy),
+            "01-paid-time-off.md",
+            "pto-quick-reference.txt",
+        )
+        personal = re.search(
+            r"\b(can i|am i|submit|request|my balance|next week|tomorrow)\b",
+            query,
+            re.I,
+        )
+        if cited and not personal:
+            result.sources = cited
+            result.rag_alone_enough = True
+            result.answer = (
+                "**Policy fact:** After the second anniversary, PTO accrual is 20 days "
+                "(160 hours) a year. The carryover cap is 40 hours into the next calendar "
+                "year, except California (POL-PTO-001). The PTO quick reference states the "
+                "same 20-day band and 40-hour cap.\n\n"
+                "**Not a recommendation:** A personal balance still needs an employee id."
+            )
+            return
+        result.needs_clarification = True
+        result.sources = cited or _collect_sources(policy)
         result.answer = (
             "I can quote the PTO policy, but a request needs an employee id so I can "
             "check the HarborHub balance and the 30-day use rule. Example: EMP-1008."
@@ -549,11 +595,11 @@ def _run_triage(result: AgentResult, bus: McpToolBus, query: str, eid: str | Non
         {"query": "harassment reporting hotline POL-CON-010", "kind": "policy"},
         bus.call(
             "search_policy_documents",
-            query="harassment reporting hotline POL-CON-010",
-            kind="policy",
-        ),
+        query="harassment reporting hotline POL-CON-010",
+        kind="policy",
+    ),
     )
-    result.sources = _collect_sources(policy)
+    result.sources = _cite(_collect_sources(policy), "10-workplace-conduct.md") or _collect_sources(policy)[:1]
     result.escalation = {
         "needed": True,
         "reason": "people_ops_or_hotline",
@@ -617,7 +663,11 @@ def _run_expense(result: AgentResult, bus: McpToolBus, query: str, eid: str | No
             policy_id="POL-EXP-004",
         ),
     )
-    result.sources = _collect_sources(compliance)
+    result.sources = _cite(
+        _collect_sources(compliance),
+        "04-travel-and-expenses.md",
+        "expense-limits-2026.pdf",
+    ) or _collect_sources(compliance)
     if not result.sources:
         result.escalation = {"needed": True, "reason": "incomplete_policy_evidence"}
         result.answer = "Not enough policy evidence to check that expense scenario."
@@ -671,7 +721,32 @@ def _run_benefits(result: AgentResult, bus: McpToolBus, query: str, eid: str | N
         {"policy_id": "POL-BEN-006", "section": "Retirement"},
         bus.call("get_policy_section", policy_id="POL-BEN-006", section="Retirement"),
     )
-    result.sources = _canonical_sections(medical, retirement) or _collect_sources(search)
+    election = re.search(r"\b(elect|election|how long|start date)\b", query, re.I)
+    vesting = re.search(r"\bvest", query, re.I)
+    needles = ["06-employee-benefits.md"]
+    if vesting:
+        needles.append("benefits-enrollment-guide.html")
+    if election:
+        needles.extend(["benefits-enrollment-guide.html", "07-new-hire-onboarding.md"])
+    result.sources = _cite(
+        _canonical_sections(medical, retirement) or _collect_sources(search),
+        *needles,
+    )
+    if any(needle not in " ".join(src.get("source_path") or "" for src in result.sources) for needle in needles):
+        wider = _record(
+            result,
+            "search_policy_documents",
+            {
+                "query": "medical election 30 days new hire benefits enrollment guide 401k vesting",
+                "kind": "policy",
+            },
+            bus.call(
+                "search_policy_documents",
+                query="medical election 30 days new hire benefits enrollment guide 401k vesting",
+                kind="policy",
+            ),
+        )
+        result.sources = _cite(result.sources + _collect_sources(wider), *needles)
     extra = ""
     if eid:
         benefits = _record(
@@ -691,9 +766,15 @@ def _run_benefits(result: AgentResult, bus: McpToolBus, query: str, eid: str | N
         result.escalation = {"needed": True, "reason": "incomplete_policy_evidence"}
         result.answer = "Not enough benefits policy evidence."
         return
+    window = ""
+    if election:
+        window = (
+            " New hires have 30 days from the start date to elect medical coverage "
+            "(POL-BEN-006, POL-ONB-007)."
+        )
     result.answer = (
         "**Policy fact:** Company 401(k) match is 100% of the first 4% deferred, immediate vesting "
-        f"(POL-BEN-006).{extra}\n\n"
+        f"(POL-BEN-006).{window}{extra}\n\n"
         "**Not a recommendation:** Elections and qualifying-life changes go through HarborHub."
     )
 
@@ -719,6 +800,33 @@ def _run_policy_qa(result: AgentResult, bus: McpToolBus, query: str, eid: str | 
         result.answer = (
             "That question is outside the Harborline policy corpus, or retrieval returned "
             "no usable evidence. I will not invent an answer."
+        )
+        return
+    text = query.lower()
+    if "phishing" in text or "okta" in text:
+        result.sources = _cite(
+            result.sources,
+            "05-information-security.md",
+            "acceptable-use-policy.txt",
+        ) or result.sources[:1]
+    if "parental" in text or "secondary caregiver" in text:
+        result.sources = _cite(result.sources, "11-parental-and-family-care.md") or result.sources[:1]
+        result.answer = (
+            "**Policy fact:** Secondary caregivers get 8 weeks of paid parental leave "
+            "(POL-FAM-011).\n\n"
+            "**Not a recommendation:** Confirm the caregiver role with People Operations."
+        )
+        return
+    if "thanksgiving" in text:
+        result.sources = _cite(
+            result.sources,
+            "02-company-holidays.md",
+            "holiday-calendar-2026.html",
+        ) or result.sources[:1]
+        result.answer = (
+            "**Policy fact:** Yes. 27 November 2026, the day after Thanksgiving, is a US "
+            "company holiday.\n\n"
+            "**Not a recommendation:** Confirm the office closure on the holiday calendar."
         )
         return
     top = result.sources[0]

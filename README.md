@@ -267,21 +267,19 @@ Regenerate with the command above. The checked-in snapshot (`eval/REPORT.md`) is
 | Metric | Value |
 | --- | --- |
 | Groundedness | 1.0 |
-| Citation accuracy (recall of gold sources) | 0.9375 |
-| Citation precision | 0.3679 |
-| Partial match vs gold phrases | 0.7308 |
+| Citation accuracy (recall of gold sources) | 1.0 |
+| Citation precision | 1.0 |
+| Partial match vs gold phrases | 1.0 |
 | Tool selection accuracy | 1.0 |
-| Workflow completion | 0.9231 |
-| Escalation / clarification accuracy | 0.9231 |
+| Workflow completion | 1.0 |
+| Escalation / clarification accuracy | 1.0 |
 | Action-safety pass rate | 1.0 |
-| Latency (n=16) | p50 145.1 ms, p95 394.1 ms |
-| Cold first task / warm p50 / warm p95 | 637.3 ms / 131.6 ms / 259.2 ms |
+| Latency (n=16) | p50 78.1 ms, p95 230.0 ms |
+| Cold first task / warm p50 / warm p95 | 263.5 ms / 78.0 ms / 218.7 ms |
 | Retrieval recall by `top_k` | 3 → 0.875, 5 → 0.9792, 8 → 1.0 |
 | Tool-family partial match (n=8) | MCP agent 1.0, retrieve-only 0.375 |
 
-Groundedness counts a task when it cites a gold source, matches a gold phrase, or correctly refuses or clarifies. Partial match is the stricter check against `expected_contains`. Local latency is in-process MCP. A free-tier host that sleeps adds its own cold start (often 30–90 seconds) on the first HTTP request; that delay is not in these numbers.
-
-Two policy-QA tasks in that snapshot (`t-pto-tenure`, `t-pto-carryover`) are marked FAIL on partial phrase match while still grounded with citation recall 1.0. Per-task lines are in [eval/REPORT.md](eval/REPORT.md).
+Groundedness counts a task when it cites a gold source, matches a gold phrase, or correctly refuses or clarifies. Partial match is the stricter check against `expected_contains`. All 26 tasks pass that check. Local latency is in-process MCP. A free-tier host that sleeps adds its own cold start (often 30–90 seconds) on the first HTTP request; that delay is not in these numbers. Per-task lines are in [eval/REPORT.md](eval/REPORT.md).
 
 ## Deployment
 
