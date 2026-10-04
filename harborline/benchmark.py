@@ -351,4 +351,13 @@ def format_report(report: dict) -> str:
             f"cite_recall={row['citation_recall']} tools={row['tools']} "
             f"{row['elapsed_ms']}ms"
         )
+        cited: list[str] = []
+        seen: set[str] = set()
+        for src in row.get("sources") or []:
+            name = str(src).replace("\\", "/").rsplit("/", 1)[-1]
+            if name and name not in seen:
+                cited.append(name)
+                seen.add(name)
+        if cited:
+            lines.append("  - citations: " + ", ".join(cited))
     return "\n".join(lines)

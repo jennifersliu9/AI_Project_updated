@@ -20,7 +20,7 @@ Deeper references:
 
 ## What is in the repo
 
-**Policies.** Twelve handbook documents (`POL-HB-000` through `POL-FAM-011`) plus HTML, TXT, and PDF companions. Shared facts are repeated on purpose: 15/20/25 PTO days by tenure, a 40-hour carryover cap, 11 holidays plus 2 floating days, a 50-mile hub rule, $225 US hotel / $75 meal caps, receipts at $25, immediate 401(k) vesting, and 16/8 weeks of parental leave. Corpus revision date is 1 September 2026. Rebuild the two PDFs with `python scripts/build_pdfs.py`.
+**Policies.** Twelve handbook documents (`POL-HB-000` through `POL-FAM-011`) plus HTML, TXT, and PDF companions. Shared facts are repeated on purpose: 15/20/25 PTO days by tenure and a 40-hour carryover cap (`01-paid-time-off.md`, `pto-quick-reference.txt`), 11 holidays plus 2 floating days (`02-company-holidays.md`, `holiday-calendar-2026.html`), a 50-mile hub rule (`03-remote-hybrid-work.md`), $225 US hotel / $75 meal caps and receipts at $25 (`04-travel-and-expenses.md`, `expense-limits-2026.pdf`), immediate 401(k) vesting (`06-employee-benefits.md`), and 16/8 weeks of parental leave (`11-parental-and-family-care.md`). Corpus revision date is 1 September 2026. Rebuild the two PDFs with `python scripts/build_pdfs.py`.
 
 **HarborHub records (as of 21 September 2026).** Three offices, 16 employees (`EMP-1001`–`EMP-1016`), matching PTO banks and benefits elections, and 14 existing tickets. Join on `employee_id`. Two rows the agent demos use:
 
