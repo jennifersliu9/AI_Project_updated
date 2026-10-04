@@ -26,6 +26,6 @@ Environment:
 
 ## Free-tier cold starts
 
-A Render free-tier service sleeps after inactivity. The first HTTP request after sleep often waits 30–90 seconds before the process answers. That delay is the platform waking the container. It is not included in the local latency numbers in [eval/REPORT.md](eval/REPORT.md) (in-process MCP, p50 about 145 ms).
+A Render free-tier service sleeps after inactivity. The first HTTP request after sleep often waits 30–90 seconds before the process answers. That delay is the platform waking the container. It is not included in the local latency numbers in [eval/REPORT.md](eval/REPORT.md) (in-process MCP, p50 about 78 ms).
 
 The first search after a fresh process also calls the OpenAI embeddings API for the corpus and keeps the matrix in memory. `.cache/` is local to the container and does not survive a new deploy, so that embed step runs again after each deploy and after a cold start that starts a new instance. Later questions in the same process only embed the query.

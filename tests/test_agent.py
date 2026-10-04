@@ -43,6 +43,22 @@ def test_remote_eligibility_workflow_via_mcp():
     assert "mcp_discovered_tools" in trace
 
 
+def test_pto_policy_facts_do_not_require_an_employee():
+    tenure = run_agent(
+        "How many PTO days do I get after my second anniversary?",
+        transport="mcp-inproc",
+    )
+    assert tenure.needs_clarification is False
+    assert "20" in tenure.answer
+    assert any("01-paid-time-off.md" in (src.get("source_path") or "") for src in tenure.sources)
+    carry = run_agent(
+        "What is the PTO carryover cap in hours?",
+        transport="mcp-inproc",
+    )
+    assert carry.needs_clarification is False
+    assert "40" in carry.answer
+
+
 def test_pto_guidance_waiting_period():
     result = run_agent(
         "Can I take PTO next week?",
