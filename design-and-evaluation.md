@@ -123,7 +123,7 @@ Policy tools read the RAG index. Profile, PTO, and benefits tools read `data/*.j
 
 The image is `Dockerfile`: Python 3.12, FastAPI via uvicorn on port 8000, `corpus/`, `data/`, and `eval/` copied in. Secrets stay in the host environment. The image sets `HARBORLINE_RETRIEVE_BACKEND=openai` and `HARBORLINE_EMBEDDING_MODEL=text-embedding-3-small`. It also pins `HARBORLINE_ANSWER_MODE=retrieve`, so a Render service variable `HARBORLINE_ANSWER_MODE=llm` has to override that pin when the chat model should write answers.
 
-On Render, set `OPENAI_API_KEY` and `HARBORLINE_ANSWER_MODE=llm`, and set the service port to 8000. Do not set `HARBORLINE_RETRIEVE_BACKEND` to `tfidf` on the service if embeddings should run, and do not set `pinecone` or `faiss`. The first search after a restart calls the embeddings API and holds the matrix in that process. `.cache/` does not survive a new deploy. GitHub Actions runs tests with TF-IDF and calls a Render deploy hook only when the `RENDER_DEPLOY_HOOK` secret is set. See [deployed.md](deployed.md).
+The deployed app is https://ai-project-updated-1.onrender.com/ and health is https://ai-project-updated-1.onrender.com/health. On Render, set `OPENAI_API_KEY` and `HARBORLINE_ANSWER_MODE=llm`, and set the service port to 8000. Do not set `HARBORLINE_RETRIEVE_BACKEND` to `tfidf` on the service if embeddings should run, and do not set `pinecone` or `faiss`. The first search after a restart calls the embeddings API and holds the matrix in that process. `.cache/` does not survive a new deploy. GitHub Actions runs tests with TF-IDF and calls a Render deploy hook only when the `RENDER_DEPLOY_HOOK` secret is set. See [deployed.md](deployed.md).
 
 ## Evaluation
 

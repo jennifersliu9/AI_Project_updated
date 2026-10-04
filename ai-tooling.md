@@ -31,4 +31,4 @@ Pinecone was wired as the vector store and then removed. A Render deploy still n
 
 The Docker image still sets `HARBORLINE_ANSWER_MODE=retrieve`. A key in the environment does not by itself turn on LLM answers in that image. Render has to set `HARBORLINE_ANSWER_MODE=llm` to override the pin. Early docs described the image as if the key alone selected `llm`, which did not match the Dockerfile.
 
-No public Render URL is recorded in the repo. Actions deploys only when `RENDER_DEPLOY_HOOK` is set, and that secret is not configured here, so the assistant could not verify `/health` on a live host.
+The deployed app is https://ai-project-updated-1.onrender.com/ and health is https://ai-project-updated-1.onrender.com/health. Actions still auto-deploys only when `RENDER_DEPLOY_HOOK` is set.
