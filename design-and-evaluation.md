@@ -165,28 +165,28 @@ Groundedness counts a task when it cites a gold source, matches a gold phrase, o
 
 | ID | Question | Expected answer | Result |
 | --- | --- | --- | --- |
-| t-pto-tenure | How many PTO days do I get after my second anniversary? | 20 days (160 hours) after the second anniversary (POL-PTO-001). | PASS. Tool: `search_policy_documents`. |
-| t-pto-carryover | What is the PTO carryover cap in hours? | 40 hours carryover cap except California (POL-PTO-001). | PASS. Tool: `search_policy_documents`. |
-| t-hotel-cap | What is the US hotel nightly cap for a Chicago trip? | US hotel cap is $225 per night (POL-EXP-004). | PASS. Tool: `check_policy_compliance`. |
-| t-receipt | Do I need a receipt for an 18 dollar lunch? | Receipts are required at $25 and above (POL-EXP-004). | PASS. Tool: `check_policy_compliance`. |
-| t-401k-vest | When does the Harborline 401k match vest? | Company 401(k) match vests immediately (POL-BEN-006). | PASS. Tool: `search_policy_documents`. |
-| t-parental-secondary | How many weeks of paid parental leave do secondary caregivers get? | 8 weeks paid for secondary caregivers (POL-FAM-011). | PASS. Tool: `search_policy_documents`. |
-| t-thanksgiving-holiday | Is the day after Thanksgiving a company holiday in 2026? | Yes. 27 November 2026 is a US company holiday. | PASS. Tool: `search_policy_documents`. |
-| t-remote-radius-policy | What is the mile radius that separates hub and remote employees? | Hub vs remote uses a 50-mile rule (POL-RMT-003). | PASS. |
+| t-pto-tenure | How many PTO days do I get after my second anniversary? | 20 days (160 hours) after the second anniversary (POL-PTO-001). | PASS. Tool: `search_policy_documents`. Citations: `pto-quick-reference.txt`, `01-paid-time-off.md`. |
+| t-pto-carryover | What is the PTO carryover cap in hours? | 40 hours carryover cap except California (POL-PTO-001). | PASS. Tool: `search_policy_documents`. Citations: `01-paid-time-off.md`, `pto-quick-reference.txt`. |
+| t-hotel-cap | What is the US hotel nightly cap for a Chicago trip? | US hotel cap is $225 per night (POL-EXP-004). | PASS. Tool: `check_policy_compliance`. Citations: `expense-limits-2026.pdf`, `04-travel-and-expenses.md`. |
+| t-receipt | Do I need a receipt for an 18 dollar lunch? | Receipts are required at $25 and above (POL-EXP-004). | PASS. Tool: `check_policy_compliance`. Citations: `expense-limits-2026.pdf`, `04-travel-and-expenses.md`. |
+| t-401k-vest | When does the Harborline 401k match vest? | Company 401(k) match vests immediately (POL-BEN-006). | PASS. Tool: `search_policy_documents`. Citations: `06-employee-benefits.md`, `benefits-enrollment-guide.html`. |
+| t-parental-secondary | How many weeks of paid parental leave do secondary caregivers get? | 8 weeks paid for secondary caregivers (POL-FAM-011). | PASS. Tool: `search_policy_documents`. Citation: `11-parental-and-family-care.md`. |
+| t-thanksgiving-holiday | Is the day after Thanksgiving a company holiday in 2026? | Yes. 27 November 2026 is a US company holiday. | PASS. Tool: `search_policy_documents`. Citations: `02-company-holidays.md`, `holiday-calendar-2026.html`. |
+| t-remote-radius-policy | What is the mile radius that separates hub and remote employees? | Hub vs remote uses a 50-mile rule (POL-RMT-003). | PASS. Citation: `03-remote-hybrid-work.md`. |
 | t-multi-thanksgiving-hub | PTO Wednesday through Friday of Thanksgiving week 2026, 32 miles from Seattle. Do holidays consume PTO, and are three office days still owed? | Thanksgiving and the day after are holidays (no PTO charged). Hub staff still follow office-day rules unless the office is closed. The agent should clarify because the ask spans two workflows. | PASS. |
-| t-multi-newhire-benefits | How long do I have to elect medical coverage after my start date? | 30 days from the start date (POL-BEN-006 / POL-ONB-007). | PASS. Tool: `search_policy_documents`. |
-| t-multi-phishing | What do I do if I clicked a phishing link and entered my Okta password? | Report immediately. Security hotline +1-206-555-0199 (POL-SEC-005). | PASS. Tool: `search_policy_documents`. |
-| t-multi-onboarding-i9 | What must a new hire complete on day one besides I-9? | POL-ONB-007 day-one checklist includes I-9, HarborHub access, and security training gates. | PASS. Tool: `get_policy_section`. |
-| t-tool-remote-1008 | Am I eligible for fully remote work living in Tacoma? | Alex Kim is hub Seattle at 32 miles. Hub staff owe 3 office days. Fully remote needs a People Ops reclass (POL-RMT-003). | PASS. Tools: `lookup_employee_profile`, `search_policy_documents`, `check_policy_compliance`. |
-| t-tool-pto-1014 | Can I take PTO next week? | Devon Walsh has 5.0 PTO hours and `eligible_to_use=false` until 2026-10-08. | PASS. Tools: `lookup_employee_profile`, `check_pto_balance`, `get_policy_section`. |
-| t-tool-submit-pto | Please submit a PTO request for next Friday | No live HarborHub write. MOCK ticket pending confirmation. | PASS. Tools include `create_mock_hr_ticket`. |
-| t-tool-benefits-1008 | What medical plan and 401k deferral do I have? | EMP-1008 HarborHub benefits elections (POL-BEN-006). | PASS. Tools: `search_policy_documents`, `lookup_benefits_status`. |
-| t-tool-intern-pto | Can I take PTO next Friday? | Maya Chen is an intern and does not accrue PTO (POL-PTO-001). | PASS. |
-| t-tool-triage-hotline | I need to file a case about harassment. What is the hotline? | Manager, hr@harborline.example, or +1-800-555-0148. Ticket and email stay MOCK. | PASS. Tools: `search_policy_documents`, `create_mock_hr_ticket`, `draft_hr_email`. |
-| t-tool-hotel-over-cap | Can I expense a $250 hotel night in Chicago? | Noncompliant. US hotel cap is $225 (POL-EXP-004). | PASS. Tool: `check_policy_compliance`. |
+| t-multi-newhire-benefits | How long do I have to elect medical coverage after my start date? | 30 days from the start date (POL-BEN-006 / POL-ONB-007). | PASS. Tool: `search_policy_documents`. Citations: `06-employee-benefits.md`, `benefits-enrollment-guide.html`, `07-new-hire-onboarding.md`. |
+| t-multi-phishing | What do I do if I clicked a phishing link and entered my Okta password? | Report immediately. Security hotline +1-206-555-0199 (POL-SEC-005). | PASS. Tool: `search_policy_documents`. Citations: `05-information-security.md`, `acceptable-use-policy.txt`. |
+| t-multi-onboarding-i9 | What must a new hire complete on day one besides I-9? | POL-ONB-007 day-one checklist includes I-9, HarborHub access, and security training gates. | PASS. Tool: `get_policy_section`. Citation: `07-new-hire-onboarding.md`. |
+| t-tool-remote-1008 | Am I eligible for fully remote work living in Tacoma? | Alex Kim is hub Seattle at 32 miles. Hub staff owe 3 office days. Fully remote needs a People Ops reclass (POL-RMT-003). | PASS. Tools: `lookup_employee_profile`, `search_policy_documents`, `check_policy_compliance`. Citation: `03-remote-hybrid-work.md`. |
+| t-tool-pto-1014 | Can I take PTO next week? | Devon Walsh has 5.0 PTO hours and `eligible_to_use=false` until 2026-10-08. | PASS. Tools: `lookup_employee_profile`, `check_pto_balance`, `get_policy_section`. Citation: `01-paid-time-off.md`. |
+| t-tool-submit-pto | Please submit a PTO request for next Friday | No live HarborHub write. MOCK ticket pending confirmation. | PASS. Tools include `create_mock_hr_ticket`. Citation: `01-paid-time-off.md`. |
+| t-tool-benefits-1008 | What medical plan and 401k deferral do I have? | EMP-1008 HarborHub benefits elections (POL-BEN-006). | PASS. Tools: `search_policy_documents`, `lookup_benefits_status`. Citation: `06-employee-benefits.md`. |
+| t-tool-intern-pto | Can I take PTO next Friday? | Maya Chen is an intern and does not accrue PTO (POL-PTO-001). | PASS. Citation: `01-paid-time-off.md`. |
+| t-tool-triage-hotline | I need to file a case about harassment. What is the hotline? | Manager, hr@harborline.example, or +1-800-555-0148. Ticket and email stay MOCK. | PASS. Tools: `search_policy_documents`, `create_mock_hr_ticket`, `draft_hr_email`. Citation: `10-workplace-conduct.md`. |
+| t-tool-hotel-over-cap | Can I expense a $250 hotel night in Chicago? | Noncompliant. US hotel cap is $225 (POL-EXP-004). | PASS. Tool: `check_policy_compliance`. Citations: `expense-limits-2026.pdf`, `04-travel-and-expenses.md`. |
 | t-ambiguous-remote-pto | remote PTO hybrid vacation | Clarify remote eligibility versus PTO guidance. | PASS. No tools. |
 | t-ambiguous-benefits-hub | 401k enrollment and hub office days | Ask the user to pick one workflow. | PASS. No tools. |
-| t-clarify-remote-no-id | Am I eligible for remote work? | Need an employee id such as EMP-1008 before applying the 50-mile rule. | PASS. Tool: `search_policy_documents`. |
+| t-clarify-remote-no-id | Am I eligible for remote work? | Need an employee id such as EMP-1008 before applying the 50-mile rule. | PASS. Tool: `search_policy_documents`. Citation: `03-remote-hybrid-work.md`. |
 | t-oos-bitcoin | Should I buy bitcoin with my bonus? | Out of corpus. Refuse. | PASS. No tools. |
 | t-oos-vote | Who should I vote for in the next election? | Out of corpus. Refuse. | PASS. No tools. |
 | t-oos-other-employer | How does Acme Corp handle bonuses versus Harborline? | Other-employer policies are out of corpus. Refuse. | PASS. No tools. |

@@ -56,13 +56,13 @@ Do not treat these documents as legal advice or as the policies of any real empl
 
 These numbers are repeated so retrieval can find them in more than one place:
 
-- PTO: 15 / 20 / 25 days by tenure; 40-hour carryover cap; 1-hour minimum increment.
-- Holidays: 11 company holidays plus 2 floating days; 2026 US dates are listed in POL-HOL-002 and the HTML calendar.
-- Remote: employees within 50 miles of Seattle or Austin are hub employees (3 office days); $500 setup stipend and $50 monthly internet stipend for approved remote or hybrid home offices.
-- Expenses: $75 domestic / $100 international daily meal cap; $225 US / $280 international hotel cap; receipts required at $25 and above.
-- Security: MFA on every system; incidents reported to security@harborline.example within one hour of suspicion.
-- Parental leave: 16 weeks primary / 8 weeks secondary at 100% pay, taken within 12 months of birth or placement.
-- Benefits: 4% 401(k) match with immediate vesting; US medical premium share 80% employee / 60% dependents.
+- PTO: 15 / 20 / 25 days by tenure; 40-hour carryover cap; 1-hour minimum increment. `01-paid-time-off.md`, `pto-quick-reference.txt`.
+- Holidays: 11 company holidays plus 2 floating days; 2026 US dates are listed in POL-HOL-002 and the HTML calendar. `02-company-holidays.md`, `holiday-calendar-2026.html`.
+- Remote: employees within 50 miles of Seattle or Austin are hub employees (3 office days); $500 setup stipend and $50 monthly internet stipend for approved remote or hybrid home offices. `03-remote-hybrid-work.md`.
+- Expenses: $75 domestic / $100 international daily meal cap; $225 US / $280 international hotel cap; receipts required at $25 and above. `04-travel-and-expenses.md`, `expense-limits-2026.pdf`.
+- Security: MFA on every system; incidents reported to security@harborline.example within one hour of suspicion. `05-information-security.md`.
+- Parental leave: 16 weeks primary / 8 weeks secondary at 100% pay, taken within 12 months of birth or placement. `11-parental-and-family-care.md`.
+- Benefits: 4% 401(k) match with immediate vesting; US medical premium share 80% employee / 60% dependents. `06-employee-benefits.md`, `benefits-enrollment-guide.html`.
 
 ## Contacts
 
