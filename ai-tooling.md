@@ -24,5 +24,3 @@ FAISS was the original vector store, paired with a local MiniLM embedding model.
 Inline Python on Windows PowerShell failed while checking that embed. The shell stripped `$` variables and quotes, so a one-line `python -c` script was not the program that had been typed. Small script files were used instead, then deleted. The embedding check was fine. The shell quoting was what broke.
 
 The first `pytest` run failed before any test executed, because that Python install had no `pytest`. That looked like a retrieval regression and was an environment gap. Installing `pytest` and `httpx` unblocked the suite.
-
-The Docker image and the answer-mode setting disagreed. An MCP env block had pinned `HARBORLINE_ANSWER_MODE=retrieve`, so a key in `.env` never turned on chat wording. The image still pins `retrieve`. A key in the environment does not by itself turn on LLM answers in that image. Render has to set `HARBORLINE_ANSWER_MODE=llm` to override the pin. The live service is https://ai-project-updated-1.onrender.com/ and health is https://ai-project-updated-1.onrender.com/health. Actions auto-deploys only when `RENDER_DEPLOY_HOOK` is set.
