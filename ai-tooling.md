@@ -11,7 +11,7 @@ This repository was built and revised in Cursor, using Cursor cloud agents as th
 | GitHub | Held the source, pull requests, and the Actions workflow that tests on every push. |
 | OpenAI embeddings and chat APIs | Runtime only: `text-embedding-3-small` for vectors and `gpt-4o-mini` when `HARBORLINE_ANSWER_MODE=llm`. |
 
-The agent sessions that touched this repo covered the move from a hosted Pinecone index to in-process cosine search over OpenAI embeddings, Render environment notes, the README answer-mode wording, and these submission documents.
+The agent sessions that touched this repo covered the in-process cosine index over OpenAI embeddings, Render environment notes, the README answer-mode wording, and these submission documents.
 
 ## What worked well
 
@@ -27,8 +27,6 @@ Inline Python on Windows PowerShell broke when the shell stripped `$` variables 
 
 The first test run failed because that Python install had no `pytest`. Installing `pytest` and `httpx` unblocked the suite. The failure was the environment, not the retrieval change.
 
-Pinecone was wired as the vector store and then removed. A Render deploy still needed `OPENAI_API_KEY`, `PINECONE_API_KEY`, and an index host, and an empty namespace would embed the whole corpus inside one HTTP request. Replacing that with the OpenAI embeddings API plus a local cosine cache dropped the second vendor. The tradeoff is that the matrix lives in the process and the cache does not survive a new container.
+The Docker image sets `HARBORLINE_ANSWER_MODE=retrieve`. A key in the environment does not by itself turn on LLM answers in that image. Render has to set `HARBORLINE_ANSWER_MODE=llm` to override the pin. The embedding matrix lives in the process, and `.cache/` does not survive a new container.
 
-The Docker image still sets `HARBORLINE_ANSWER_MODE=retrieve`. A key in the environment does not by itself turn on LLM answers in that image. Render has to set `HARBORLINE_ANSWER_MODE=llm` to override the pin. Early docs described the image as if the key alone selected `llm`, which did not match the Dockerfile.
-
-The deployed app is https://ai-project-updated-1.onrender.com/ and health is https://ai-project-updated-1.onrender.com/health. Actions still auto-deploys only when `RENDER_DEPLOY_HOOK` is set.
+The deployed app is https://ai-project-updated-1.onrender.com/ and health is https://ai-project-updated-1.onrender.com/health. Actions auto-deploys only when `RENDER_DEPLOY_HOOK` is set.

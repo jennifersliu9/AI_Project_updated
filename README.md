@@ -29,7 +29,7 @@ Deeper references:
 | EMP-1008 | Alex Kim, software engineer, Tacoma | Hub Seattle at 32 miles; fully remote needs a People Ops reclass |
 | EMP-1014 | Devon Walsh, account executive, started 8 Sep 2026 | PTO not usable until 8 Oct 2026; benefits election still open |
 
-**App.** Heading-aware chunking, OpenAI `text-embedding-3-small` embeddings, an in-process cosine index, query rewrite, lexical rerank, citations, and corpus guardrails. The Render process does not download sentence-transformer weights. It calls the OpenAI embeddings API and keeps the resulting matrix in memory. A rule-based HR agent calls eight tools through MCP. FastAPI serves a People Desk chat page plus `/chat`, `/ask`, `/health`, `/demos`, and `/eval`. GitHub Actions installs, starts the app, runs pytest, and deploys only after tests pass.
+**App.** Heading-aware chunking, OpenAI `text-embedding-3-small` embeddings, an in-process cosine index, query rewrite, lexical rerank, citations, and corpus guardrails. The Render process calls the OpenAI embeddings API and keeps the resulting matrix in memory. A rule-based HR agent calls eight tools through MCP. FastAPI serves a People Desk chat page plus `/chat`, `/ask`, `/health`, `/demos`, and `/eval`. GitHub Actions installs, starts the app, runs pytest, and deploys only after tests pass.
 
 ## Architecture
 
@@ -123,13 +123,13 @@ cp .env.example .env
 | `HARBORLINE_RERANK` | No | `true` | Lexical overlap plus diverse sources |
 | `HARBORLINE_MIN_SCORE` | No | `0.22` | Guardrail floor |
 | `HARBORLINE_RETRIEVE_BACKEND` | No | `openai` | `openai` or `tfidf` |
-| `HARBORLINE_EMBEDDING_MODEL` | No | `text-embedding-3-small` | Passed to `OpenAIEmbeddings` (cloud API). Local HuggingFace ids are rejected |
+| `HARBORLINE_EMBEDDING_MODEL` | No | `text-embedding-3-small` | OpenAI embeddings model |
 
 ## RAG pipeline
 
 Activate the virtualenv and run commands from the repo root. The default `openai` backend needs `OPENAI_API_KEY`. `HARBORLINE_RETRIEVE_BACKEND=tfidf` needs no keys.
 
-**Ingest** parses `corpus/` (Markdown and HTML by heading, PDF by page, TXT by window) and `data/*.json` as structured records. Sections longer than the window are split into 900-character chunks with 120-character overlap. Embeddings are OpenAI **text-embedding-3-small**, requested from the embeddings API. Vectors are L2-normalized and cached under `.cache/` (`openai_vectors.npz` and `openai_chunks.json`). Query time embeds one string and ranks that matrix with cosine similarity. Those cosine scores often sit higher than the old local MiniLM scores. The guardrail floor stays `0.22`; raise `HARBORLINE_MIN_SCORE` if unrelated questions start passing it. Each chunk keeps `title`, `section`, `source_path`, `source_format`, `snippet`, `kind`, and ids so `ask` can cite them.
+**Ingest** parses `corpus/` (Markdown and HTML by heading, PDF by page, TXT by window) and `data/*.json` as structured records. Sections longer than the window are split into 900-character chunks with 120-character overlap. Embeddings are OpenAI **text-embedding-3-small**, requested from the embeddings API. Vectors are L2-normalized and cached under `.cache/` (`openai_vectors.npz` and `openai_chunks.json`). Query time embeds one string and ranks that matrix with cosine similarity. The guardrail floor is `0.22`. Each chunk keeps `title`, `section`, `source_path`, `source_format`, `snippet`, `kind`, and ids so `ask` can cite them.
 
 ```bash
 python -m harborline.cli ingest
@@ -287,18 +287,16 @@ Two policy-QA tasks in that snapshot (`t-pto-tenure`, `t-pto-carryover`) are mar
 
 The live service is [https://ai-project-updated-1.onrender.com/](https://ai-project-updated-1.onrender.com/). Health is [https://ai-project-updated-1.onrender.com/health](https://ai-project-updated-1.onrender.com/health). Cold-start notes are in [deployed.md](deployed.md).
 
-The image serves FastAPI. Pass secrets at runtime. Do not bake keys into the image. The image defaults to the OpenAI embedding backend. Its Dockerfile sets `HARBORLINE_ANSWER_MODE=retrieve`, so the Render service variable must override that. Set `OPENAI_API_KEY` and `HARBORLINE_ANSWER_MODE=llm` on the service. The model then writes the answer. The image copies `corpus/`, `data/`, and `eval/`. It does not download embedding weights. The first search after a restart calls the embeddings API and holds the matrix in that process. `.cache/` is local to the container and does not survive a new deploy. `/health` should show `answer_mode` of `llm` and `llm_answers` true.
+The image serves FastAPI on Render. Pass secrets at runtime. Do not bake keys into the image. The image defaults to the OpenAI embedding backend. Its Dockerfile sets `HARBORLINE_ANSWER_MODE=retrieve`, so the Render service variable must override that. Set `OPENAI_API_KEY` and `HARBORLINE_ANSWER_MODE=llm` on the service. The model then writes the answer. The image copies `corpus/`, `data/`, and `eval/`. The first search after a restart calls the embeddings API and holds the matrix in that process. `.cache/` is local to the container and does not survive a new deploy. `/health` should show `answer_mode` of `llm` and `llm_answers` true.
 
 ```bash
 docker build -t harborline-qa .
 docker run --rm -p 8000:8000 --env-file .env -e HARBORLINE_ANSWER_MODE=llm harborline-qa
 ```
 
-For Cloud Run, App Service, Fly.io, or Render, set `OPENAI_API_KEY` and `HARBORLINE_ANSWER_MODE=llm` on the service, attach `corpus/`, `data/`, and `eval/`, and keep `HARBORLINE_SEED=42` when you want eval numbers that match local runs. Do not set `HARBORLINE_RETRIEVE_BACKEND=faiss` or `pinecone`; those backends have been removed. CI still sets `HARBORLINE_ANSWER_MODE=retrieve` so tests stay extractive.
-
 ## CI
 
-[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push and pull request, with `HARBORLINE_RETRIEVE_BACKEND=tfidf` and seed 42.
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push and pull request, with `HARBORLINE_ANSWER_MODE=retrieve`, `HARBORLINE_RETRIEVE_BACKEND=tfidf`, and seed 42.
 
 1. Install `requirements.txt`, `requirements-dev.txt`, and `pip install -e .` on Python 3.12.
 2. Import check: load `harborline.api:app` and the MCP server factory (at least five tools).
@@ -312,7 +310,7 @@ For Cloud Run, App Service, Fly.io, or Render, set `OPENAI_API_KEY` and `HARBORL
 | `HARBORLINE_SEED` | 42 | `random`, NumPy, eval sampling, LLM `seed` |
 | `HARBORLINE_CHUNK_SIZE` / `OVERLAP` | 900 / 120 | The same text always yields the same chunks |
 | `PYTHONHASHSEED` | set by `Settings.apply_seeds()` | Stable hashing in-process |
-| OpenAI embeddings | `text-embedding-3-small`, cosine over a cached matrix | Vectors come from the API; no local weight files |
+| OpenAI embeddings | `text-embedding-3-small`, cosine over a cached matrix | Vectors come from the embeddings API |
 | TF-IDF | optional | Stable sort: score descending, `chunk_id` ascending |
 | LLM | temperature 0, seed 42 | When `HARBORLINE_ANSWER_MODE=llm` and `OPENAI_API_KEY` is set |
 
@@ -321,11 +319,9 @@ For Cloud Run, App Service, Fly.io, or Render, set `OPENAI_API_KEY` and `HARBORL
 ```
 corpus/                  Policies (md, html, txt, pdf) and corpus/README.md
 data/                    Mock offices, employees, PTO, benefits, tickets
-                         (the mock_data/ equivalent)
 eval/                    Gold questions, rubrics, REPORT.md
-                         (the evaluation/ equivalent)
 harborline/              Parse, chunk, OpenAI embed, cosine index, ask, tools, agent, API
-harborline/mcp_server.py MCP server and tool definitions (the mcp/ equivalent)
+harborline/mcp_server.py MCP server and tool definitions
 harborline/mcp_client.py MCP client used by the agent
 harborline/tools.py      Tool implementations behind the MCP server
 harborline/evaluate.py   Retrieval eval runner
